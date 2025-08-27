@@ -1,0 +1,19 @@
+{
+  "name": "dinner-planner",
+  "version": "1.0.0",
+  "description": "<picture>     <source srcset=\"https://raw.githubusercontent.com/leptos-rs/leptos/main/docs/logos/Leptos_logo_Solid_White.svg\" media=\"(prefers-color-scheme: dark)\">     <img src=\"https://raw.githubusercontent.com/leptos-rs/leptos/main/docs/logos/Leptos_logo_RGB.svg\" alt=\"Leptos Logo\"> </picture>",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "build": "npx tailwindcss -i ./input.css -o ./style/output.css",
+    "watch": "npx tailwindcss -i ./input.css -o ./style/output.css --watch"
+  },
+  "dependencies": {
+    "tailwindcss": "^4.1.12"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.12"
+  }
+}

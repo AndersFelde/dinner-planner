@@ -1,0 +1,17 @@
+{
+    "rust-analyzer.procMacro.ignored": {
+        "leptos_macro": [
+            // optional:
+            // "component",
+            "server"
+        ],
+    },
+    "rust-analyzer.cargo.features": ["ssr", "csr", "hydrate"],
+
+    "rust-analyzer.cargo.allFeatures": true,
+    "rust-analyzer.rustfmt.overrideCommand": [
+        "/home/kippster/.cargo/bin/leptosfmt",
+        "--stdin",
+        "--rustfmt"
+    ]
+}
