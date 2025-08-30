@@ -1,0 +1,29 @@
+use crate::models::ingredient::Ingredient;
+#[cfg(feature = "ssr")]
+use diesel::prelude::*;
+
+#[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
+pub struct MealWithIngredients {
+    #[serde(flatten)]
+    pub meal: Meal,
+    pub ingredients: Vec<Ingredient>,
+}
+
+#[derive(serde::Deserialize)]
+#[cfg_attr(feature = "ssr", derive(Insertable))]
+#[cfg_attr(feature = "ssr", diesel(table_name = crate::schema::meals))]
+pub struct MealForm<'a> {
+    pub name: &'a str,
+    pub image: Option<&'a str>,
+}
+
+#[cfg_attr(feature = "ssr", derive(Queryable, Selectable))]
+#[cfg_attr(feature = "ssr", diesel(table_name = crate::schema::meals))]
+#[cfg_attr(feature = "ssr", diesel(check_for_backend(diesel::sqlite::Sqlite)))]
+#[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
+
+pub struct Meal {
+    pub id: i32,
+    pub name: String,
+    pub image: Option<String>,
+}

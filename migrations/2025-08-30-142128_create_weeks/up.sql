@@ -1,0 +1,24 @@
+-- Ingredient table
+CREATE TABLE ingredients (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    name VARCHAR NOT NULL,
+    amount INTEGER NOT NULL,
+    bought BOOLEAN NOT NULL,
+    meal_id INTEGER REFERENCES meals(id) ON DELETE CASCADE
+);
+
+-- Meal table
+CREATE TABLE meals (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    name VARCHAR NOT NULL,
+    image VARCHAR
+);
+
+-- Day table
+CREATE TABLE days (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    date DATE NOT NULL,
+    meal_id INTEGER REFERENCES meals(id) ON DELETE SET NULL,
+    week INTEGER NOT NULL,
+    year INTEGER NOT NULL
+);

@@ -6,7 +6,7 @@
             "server"
         ],
     },
-    "rust-analyzer.cargo.features": ["ssr", "csr", "hydrate"],
+    "rust-analyzer.cargo.features": "all",
 
     "rust-analyzer.cargo.allFeatures": true,
     "rust-analyzer.rustfmt.overrideCommand": [

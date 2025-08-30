@@ -1,31 +1,113 @@
+use crate::models::day::DayWithMeal;
+use leptos::logging::log;
 use leptos::prelude::*;
 
 use crate::components::day_preview::*;
 
-#[derive(Clone, Debug)]
-pub struct Day {
-    pub date: String,
-    pub weekday: String,
-    pub meal_name: String,
-    pub image_url: String,
-    pub ingredients: Vec<String>,
-}
-
 use chrono::{Datelike, Local, NaiveDate, Weekday};
 
-#[derive(Clone, Debug)]
-struct Week {
-    week: u32,
-    year: i32,
-    days: [Day; 7],
+#[derive(serde::Deserialize, serde::Serialize, Clone, Debug, PartialEq)]
+pub struct Week {
+    pub week: u32,
+    pub year: i32,
+}
+
+fn dates_for_week(week_num: u32, year: i32) -> [NaiveDate; 7] {
+    (0..7)
+        .filter_map(|i| {
+            let weekday = match i {
+                0 => Weekday::Mon,
+                1 => Weekday::Tue,
+                2 => Weekday::Wed,
+                3 => Weekday::Thu,
+                4 => Weekday::Fri,
+                5 => Weekday::Sat,
+                6 => Weekday::Sun,
+                _ => unreachable!(),
+            };
+            NaiveDate::from_isoywd_opt(year, week_num, weekday)
+        })
+        .collect::<Vec<_>>()
+        .try_into()
+        .unwrap()
+}
+
+#[cfg(feature = "ssr")]
+pub mod ssr {}
+#[server]
+pub async fn days_for_week(_week: Week) -> Result<[DayWithMeal; 7], ServerFnError> {
+    use crate::db::*;
+    use crate::models::day::*;
+    use crate::models::ingredient::*;
+    use crate::models::meal::*;
+    use crate::schema::days;
+    use crate::schema::ingredients;
+    use crate::schema::meals;
+    use diesel::dsl::insert_into;
+    use diesel::prelude::*;
+
+    let db = &mut use_context::<Db>()
+        .ok_or(ServerFnError::new("Missing Db context"))?
+        .get()
+        .map_err(|_| ServerFnError::new("Failed to get Db connection"))?;
+    let week_dates = dates_for_week(_week.week, _week.year);
+    let days_query = days::table
+        .filter(days::week.eq(_week.week as i32))
+        .filter(days::year.eq(_week.year as i32));
+    let num_days: i64 = days_query.count().get_result(db).unwrap();
+    let mut a = vec![];
+
+    if num_days < 7 {
+        for _date in week_dates {
+            match days::table
+                .filter(days::date.eq(_date))
+                .first::<Day>(db)
+                .optional()
+                .unwrap()
+            {
+                Some(_) => continue,
+                None => {
+                    DayForm {
+                        date: _date,
+                        week: _date.iso_week().week() as i32,
+                        year: _date.year(),
+                        meal_id: None,
+                    };
+                }
+            }
+        }
+    }
+    let days_rows: Vec<Day> = days_query
+        .select(Day::as_select())
+        .load(db)
+        .map_err(|e| ServerFnError::new(format!("Database error: {}", e)))?;
+    for day in days_rows {
+        if let Some(_meal_id) = day.meal_id {
+            let meal: Meal = meals::table.filter(meals::id.eq(_meal_id)).first(db)?;
+
+            let ingredients: Vec<Ingredient> = ingredients::table
+                .filter(ingredients::meal_id.eq(_meal_id))
+                .load(db)?;
+            a.push(DayWithMeal {
+                day,
+                meal: Some(MealWithIngredients { meal, ingredients }),
+            });
+        } else {
+            a.push(DayWithMeal { day, meal: None })
+        }
+    }
+    Ok(a.try_into()
+        .map_err(|_| ServerFnError::new("Expected 7 days in week"))?)
 }
 
 impl Week {
     pub fn new(week: u32, year: i32) -> Week {
+        // let days = days_for_week(week, year).await.unwrap();
+        // let d = &days[0].day;
         Week {
-            week,
-            year,
-            days: Week::days_for_week(year, week),
+            week: week as u32,
+            year: year,
+            // days: days,
         }
     }
     pub fn current() -> Week {
@@ -33,39 +115,7 @@ impl Week {
         Week::new(w.week(), w.year())
     }
 
-    fn days_for_week(year: i32, week: u32) -> [Day; 7] {
-        Week::dates_for_week(year, week).iter().map(|d| Day {
-            date: format!("{:02}.{:02}", d.day(), d.month()),
-            weekday: format!("{}", d.weekday()),
-            meal_name: "Pasta Carbonara".to_string(),
-            image_url: "https://images.stream.schibsted.media/users/vgtv/images/25d79ba4fa299a22055f4a0d930d9052.jpg?t[]=1440q80".to_string(),
-            ingredients: vec![String::from("Pasta"), String::from("Egg"), String::from("Bacon")]
-        })
-                    .collect::<Vec<_>>()
-            .try_into()
-            .unwrap()
-    }
-
-    fn dates_for_week(year: i32, week_num: u32) -> [NaiveDate; 7] {
-        (0..7)
-            .filter_map(|i| {
-                let weekday = match i {
-                    0 => Weekday::Mon,
-                    1 => Weekday::Tue,
-                    2 => Weekday::Wed,
-                    3 => Weekday::Thu,
-                    4 => Weekday::Fri,
-                    5 => Weekday::Sat,
-                    6 => Weekday::Sun,
-                    _ => unreachable!(),
-                };
-                NaiveDate::from_isoywd_opt(year, week_num, weekday)
-            })
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap()
-    }
-    fn next(self, n: i32) -> Week {
+    pub fn next(self, n: i32) -> Week {
         let mut week = self.week as i32 + n;
         let mut year = self.year;
         let weeks_in_year = NaiveDate::from_isoywd_opt(year, 53, Weekday::Mon).map_or(52, |_| 53);
@@ -92,41 +142,65 @@ impl Week {
 #[component]
 pub fn Week() -> impl IntoView {
     let (week, set_week) = signal(Week::current());
+    let days_resource = Resource::new(move || week.get(), |week| days_for_week(week));
+    let days_data = move || {
+        days_resource
+            .get()
+            .unwrap()
+            .unwrap()
+            .iter()
+            .map(|day| {
+                view! { <DayPreview day=day.clone() /> }
+            })
+            .collect::<Vec<_>>()
+    };
 
     view! {
         <div class="flex flex-col gap-4">
-            <div class="flex justify-between items-center mb-2">
+            // Sticky navigation bar with nice SVG arrows
+            <div class="flex justify-center items-center gap-4 mb-2 sticky top-0 z-10 bg-white dark:bg-gray-800 py-2 shadow">
                 <button
-                    class="px-4 py-2 bg-gray-200 rounded"
+                    class="w-32 px-3 py-2 rounded-lg bg-blue-500 text-white font-semibold text-base shadow hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 transition flex items-center justify-center whitespace-nowrap"
                     on:click=move |_| set_week.update(|w| *w = w.clone().next(-1))
+                    title="Previous week"
                 >
-                    "Previous"
+                    <svg
+                        class="w-4 h-4 mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        viewBox="0 0 24 24"
+                    >
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                    </svg>
+                    Previous
                 </button>
-                <span class="font-bold text-lg">Week {move || format!("{} ({})", week.get().week, week.get().year)}</span>
+                <span class="font-bold text-base text-gray-900 dark:text-white">
+                    Week {move || format!("{}", week.get().week)}
+                </span>
                 <button
-                    class="px-4 py-2 bg-gray-200 rounded"
+                    class="w-32 px-3 py-2 rounded-lg bg-blue-500 text-white font-semibold text-base shadow hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 transition flex items-center justify-center whitespace-nowrap"
                     on:click=move |_| set_week.update(|w| *w = w.clone().next(1))
+                    title="Next week"
                 >
-                    "Next"
+                    Next
+                    <svg
+                        class="w-4 h-4 ml-2"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        viewBox="0 0 24 24"
+                    >
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
                 </button>
             </div>
-            <div class="flex flex-row gap-4 overflow-x-auto">
-                {move || week
-                    .get()
-                    .days
-                    .iter()
-                    .map(|day| {
-                        view! {
-                            <DayPreview
-                                date=day.date.clone()
-                                weekday=day.weekday.clone()
-                                meal_name=day.meal_name.clone()
-                                image_url=day.image_url.clone()
-                                ingredients=day.ingredients.clone()
-                            />
-                        }
-                    })
-                    .collect::<Vec<_>>()}
+            // Centered vertical card list
+            <div class="flex flex-col gap-4 py-2 items-center">
+                <Transition fallback=move || {
+                    view! { <p>"Loading..."</p> }
+                }>{move || days_data}</Transition>
+
             </div>
         </div>
     }
