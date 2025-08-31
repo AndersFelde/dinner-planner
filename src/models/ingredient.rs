@@ -1,11 +1,11 @@
 #[cfg(feature = "ssr")]
 use diesel::prelude::*;
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
 #[cfg_attr(feature = "ssr", derive(Insertable))]
 #[cfg_attr(feature = "ssr", diesel(table_name = crate::schema::ingredients))]
-pub struct IngredientForm<'a> {
-    pub name: &'a str,
+pub struct IngredientForm {
+    pub name: String,
     pub amount: i32,
     pub bought: bool,
     pub meal_id: Option<i32>,

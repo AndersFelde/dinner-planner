@@ -1,4 +1,4 @@
-use crate::models::ingredient::Ingredient;
+use crate::models::ingredient::{Ingredient, IngredientForm};
 #[cfg(feature = "ssr")]
 use diesel::prelude::*;
 
@@ -9,12 +9,21 @@ pub struct MealWithIngredients {
     pub ingredients: Vec<Ingredient>,
 }
 
-#[derive(serde::Deserialize)]
-#[cfg_attr(feature = "ssr", derive(Insertable))]
+#[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
+#[cfg_attr(feature = "ssr", derive(Insertable, AsChangeset))]
 #[cfg_attr(feature = "ssr", diesel(table_name = crate::schema::meals))]
-pub struct MealForm<'a> {
-    pub name: &'a str,
-    pub image: Option<&'a str>,
+pub struct MealForm {
+    pub name: String,
+    pub image: Option<String>,
+    pub recipie_url: Option<String>,
+}
+
+#[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
+pub struct MealWithIngredientsForm {
+    pub name: String,
+    pub image: Option<String>,
+    pub recipie_url: Option<String>,
+    pub ingredients: Vec<IngredientForm>,
 }
 
 #[cfg_attr(feature = "ssr", derive(Queryable, Selectable))]
@@ -26,4 +35,5 @@ pub struct Meal {
     pub id: i32,
     pub name: String,
     pub image: Option<String>,
+    pub recipie_url: Option<String>,
 }

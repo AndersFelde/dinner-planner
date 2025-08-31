@@ -25,10 +25,10 @@ diesel::table! {
         id -> Integer,
         name -> Text,
         image -> Nullable<Text>,
+        recipie_url -> Nullable<Text>,
     }
 }
 
-diesel::joinable!(days -> meals (meal_id));
 diesel::joinable!(ingredients -> meals (meal_id));
 
 diesel::allow_tables_to_appear_in_same_query!(

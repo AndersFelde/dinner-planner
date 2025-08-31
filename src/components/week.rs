@@ -32,8 +32,6 @@ fn dates_for_week(week_num: u32, year: i32) -> [NaiveDate; 7] {
         .unwrap()
 }
 
-#[cfg(feature = "ssr")]
-pub mod ssr {}
 #[server]
 pub async fn days_for_week(_week: Week) -> Result<[DayWithMeal; 7], ServerFnError> {
     use crate::db::*;
@@ -67,12 +65,19 @@ pub async fn days_for_week(_week: Week) -> Result<[DayWithMeal; 7], ServerFnErro
             {
                 Some(_) => continue,
                 None => {
-                    DayForm {
+                    let day_form = DayForm {
                         date: _date,
                         week: _date.iso_week().week() as i32,
                         year: _date.year(),
                         meal_id: None,
                     };
+                    log!(
+                        "Inserting day: {}",
+                        insert_into(days::table)
+                            .values(&day_form)
+                            .execute(db)
+                            .unwrap()
+                    )
                 }
             }
         }
@@ -81,6 +86,7 @@ pub async fn days_for_week(_week: Week) -> Result<[DayWithMeal; 7], ServerFnErro
         .select(Day::as_select())
         .load(db)
         .map_err(|e| ServerFnError::new(format!("Database error: {}", e)))?;
+    assert_eq!(days_rows.len(), 7);
     for day in days_rows {
         if let Some(_meal_id) = day.meal_id {
             let meal: Meal = meals::table.filter(meals::id.eq(_meal_id)).first(db)?;
@@ -144,15 +150,14 @@ pub fn Week() -> impl IntoView {
     let (week, set_week) = signal(Week::current());
     let days_resource = Resource::new(move || week.get(), |week| days_for_week(week));
     let days_data = move || {
-        days_resource
-            .get()
-            .unwrap()
-            .unwrap()
-            .iter()
-            .map(|day| {
-                view! { <DayPreview day=day.clone() /> }
-            })
-            .collect::<Vec<_>>()
+        days_resource.get().map(|val| {
+            val.unwrap()
+                .iter()
+                .map(|day| {
+                    view! { <DayPreview day=day.clone() /> }
+                })
+                .collect::<Vec<_>>()
+        })
     };
 
     view! {

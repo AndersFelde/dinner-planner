@@ -1,10 +1,41 @@
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
-    components::{Route, Router, Routes},
-    StaticSegment,
+    components::{Route, Router, Routes}, path, AsPath, StaticSegment
 };
-use crate::components::{week::*};
+use crate::components::{week::*, meal_form::*, day_form::*};
+
+#[derive(Clone)]
+pub enum RouteUrl {
+    Week,
+    MealForm,
+    DayForm,
+}
+impl AsPath for RouteUrl {
+    fn as_path(&self ) -> &'static str{
+        match self {
+            RouteUrl::Week => "/",
+            RouteUrl::MealForm => "/new_meal",
+            RouteUrl::DayForm => "/new_day",
+        }
+
+    }
+}
+
+impl IntoAttributeValue for RouteUrl {
+    type Output = &'static str;
+
+    fn into_attribute_value(self) -> Self::Output {
+        self.as_path()
+    }
+} 
+
+impl std::fmt::Display for RouteUrl {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_path())
+    }
+}
+
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
@@ -41,40 +72,11 @@ pub fn App() -> impl IntoView {
         <Router>
             <main>
                 <Routes fallback=|| "Page not found.".into_view()>
-                    <Route path=StaticSegment("") view=Week />
+                    <Route path=StaticSegment(RouteUrl::Week) view=Week />
+                    <Route path=StaticSegment(RouteUrl::MealForm) view=MealForm />
+                    <Route path=StaticSegment(RouteUrl::DayForm) view=DayForm />
                 </Routes>
             </main>
         </Router>
-    }
-}
-
-/// Renders the home page of your application.
-#[component]
-fn HomePage() -> impl IntoView {
-    // Creates a reactive value to update the button
-    let (value, set_value) = signal(0);
-    view! {
-        <main>
-            <div class="bg-gradient-to-tl from-blue-800 to-blue-500 text-white font-mono flex flex-col min-h-screen">
-                <div class="flex flex-row-reverse flex-wrap m-auto">
-                    <button
-                        on:click=move |_| set_value.update(|value| *value += 1)
-                        class="rounded px-3 py-2 m-1 border-b-4 border-l-2 shadow-lg bg-blue-700 border-blue-800 text-white"
-                    >
-                        "+"
-                    </button>
-                    <button class="rounded px-3 py-2 m-1 border-b-4 border-l-2 shadow-lg bg-blue-800 border-blue-900 text-white">
-                        {value}
-                    </button>
-                    <button
-                        on:click=move |_| set_value.update(|value| *value -= 1)
-                        class="rounded px-3 py-2 m-1 border-b-4 border-l-2 shadow-lg bg-blue-700 border-blue-800 text-white"
-                        class:invisible=move || { value.get() < 1 }
-                    >
-                        "-"
-                    </button>
-                </div>
-            </div>
-        </main>
     }
 }

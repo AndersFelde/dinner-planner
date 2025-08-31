@@ -10,8 +10,8 @@ pub struct DayWithMeal {
     pub meal: Option<MealWithIngredients>,
 }
 
-#[derive(serde::Deserialize)]
-#[cfg_attr(feature = "ssr", derive(Insertable))]
+#[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
+#[cfg_attr(feature = "ssr", derive(Insertable, AsChangeset))]
 #[cfg_attr(feature = "ssr", diesel(table_name = crate::schema::days))]
 pub struct DayForm {
     pub date: NaiveDate,
