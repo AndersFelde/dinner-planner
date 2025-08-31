@@ -1,22 +1,18 @@
 use crate::app::RouteUrl;
-use crate::models::day::DayForm;
-use crate::models::ingredient::IngredientForm;
+use crate::models::day::{Day, DayForm};
 use crate::models::meal::Meal;
 use chrono::{Datelike, Local, NaiveDate};
-use leptos::prelude::*;
 use leptos::logging::log;
+use leptos::prelude::*;
+use leptos_router::components::A;
 use leptos_router::hooks::use_navigate;
+use leptos_router::hooks::use_params_map;
 
 #[server]
 pub async fn create_day_with_meal(day_form: DayForm) -> Result<usize, ServerFnError> {
     use crate::db::*;
-    use crate::models::day::*;
-    use crate::models::ingredient::*;
-    use crate::models::meal::*;
     use crate::schema::days;
-    use crate::schema::ingredients;
-    use crate::schema::meals;
-    use diesel::dsl::{insert_into, update};
+    use diesel::dsl::insert_into;
     use diesel::prelude::*;
 
     let db = &mut use_context::<Db>()
@@ -35,13 +31,8 @@ pub async fn create_day_with_meal(day_form: DayForm) -> Result<usize, ServerFnEr
 #[server]
 pub async fn get_all_meals() -> Result<Vec<Meal>, ServerFnError> {
     use crate::db::*;
-    use crate::models::day::*;
-    use crate::models::ingredient::*;
     use crate::models::meal::*;
-    use crate::schema::days;
-    use crate::schema::ingredients;
     use crate::schema::meals;
-    use diesel::dsl::insert_into;
     use diesel::prelude::*;
 
     let db = &mut use_context::<Db>()
@@ -53,29 +44,95 @@ pub async fn get_all_meals() -> Result<Vec<Meal>, ServerFnError> {
         .load(db)
         .map_err(|e| ServerFnError::new(format!("Database error: {}", e)))
 }
+#[server]
+pub async fn get_day(id: i32) -> Result<Day, ServerFnError> {
+    use crate::db::*;
+    use crate::models::day::*;
+    use crate::schema::days;
+    use diesel::prelude::*;
+
+    let db = &mut use_context::<Db>()
+        .ok_or(ServerFnError::new("Missing Db context"))?
+        .get()
+        .map_err(|_| ServerFnError::new("Failed to get Db connection"))?;
+    days::table
+        .filter(days::id.eq(id))
+        .first::<Day>(db)
+        .map_err(|e| ServerFnError::new(format!("Database error: {}", e)))
+}
 // TODO: if date allready exists, edit
 #[component]
 pub fn DayForm() -> impl IntoView {
-    // Signals for meal fields
-    let (date, set_date) = signal(Local::now().format("%d-%m-%Y").to_string());
-    let (meal_id, set_meal_id) = signal(0 as i32);
+    log!("Loading day form");
+    let params = use_params_map();
+    let (date, set_date) = signal(String::new());
+    let (meal_id, set_meal_id) = signal(-1 as i32);
+    let navigate = use_navigate();
 
-let navigate = use_navigate();
+    let day_resource = Resource::new(
+        move || {
+            params
+                .read()
+                .get("id")
+                .and_then(|id| id.parse::<i32>().ok())
+        },
+        move |id| async move {
+            match id {
+                Some(id) => get_day(id).await.map(Some),
+                None => Ok(None),
+            }
+        },
+    );
 
-let add_day_action = Action::new(|day_form: &DayForm| {
-    let day_form = day_form.clone();
-    async move { create_day_with_meal(day_form).await }
-});
+    let meals_resource = OnceResource::new(get_all_meals());
 
-// Effect to redirect after success
-Effect::new(move || {
-    if let Some(Ok(_)) = add_day_action.value().get() {
-        navigate(&RouteUrl::Week.to_string(), Default::default());
-    }
-});
+    // Effect to redirect after success
 
-    // Handle form submission (pseudo-code, replace with your server call)
-    let on_submit = move |_| {
+    // let day = Resource::new(move || day.get(), move |day| async move { get_day(id).await });
+    Effect::new({
+        let set_meal_id = set_meal_id.clone();
+        let set_date = set_date.clone();
+        move || {
+            let day_resource = day_resource.get();
+            if let Some(Ok(Some(day))) = day_resource.clone() {
+                if let Some(id) = day.meal_id {
+                    set_meal_id(id);
+                } else if let Some(Ok(meals)) = meals_resource.get() {
+                    if let Some(first_meal) = meals.first() {
+                        set_meal_id(first_meal.id);
+                    }
+                }
+            }
+            if let Some(Ok(Some(day))) = day_resource {
+                set_date(day.date.format("%d-%m-%Y").to_string());
+            }
+        }
+    });
+    let meals_data = move || {
+        if let Some(Ok(Some(day))) = day_resource.get() {
+            meals_resource.get().map(|val| {
+                val.unwrap()
+                .iter()
+                .map(|meal| {
+                    view! {
+                        <option selected=day.meal_id.unwrap_or_else(|| -1) == meal.id value=meal.id>
+                            {meal.name.clone()}
+                        </option>
+                    }
+                })
+                .collect::<Vec<_>>()
+            })
+        } else {
+            None
+        }
+    };
+    let add_day_action = Action::new(|day_form: &DayForm| {
+        let day_form = day_form.clone();
+        async move { create_day_with_meal(day_form).await }
+    });
+
+    let on_submit = move |ev: leptos::ev::SubmitEvent| {
+        ev.prevent_default();
         let date = NaiveDate::parse_from_str(&date.get(), "%d-%m-%Y").unwrap();
         let meal_id = meal_id.get();
         let day_form = DayForm {
@@ -85,33 +142,19 @@ Effect::new(move || {
             year: date.year(),
         };
         add_day_action.dispatch(day_form);
+        log!("add day action {:?}", add_day_action.value().get());
     };
 
-    let meals_resource = Resource::new(move || {}, |_| get_all_meals());
-    Effect::new({
-        let set_meal_id = set_meal_id.clone();
-        move || {
-            if let Some(Ok(meals)) = meals_resource.get() {
-                if let Some(first_meal) = meals.first() {
-                    set_meal_id(first_meal.id);
-                }
-            }
+    Effect::new(move || {
+        log!("Check redirect");
+        if let Some(Ok(_)) = add_day_action.value().get() {
+            navigate(&RouteUrl::Home.to_string(), Default::default());
         }
     });
-    let meals_data = move || {
-        meals_resource.get().map(|val| {
-            val.unwrap()
-                .iter()
-                .map(|meal| {
-                    view! { <option value=meal.id>{meal.name.clone()}</option> }
-                })
-                .collect::<Vec<_>>()
-        })
-    };
 
     view! {
         <div class="max-w-lg mx-auto mt-8 p-6 bg-white dark:bg-gray-900 rounded-xl shadow-lg">
-            <a href=RouteUrl::Week class="text-blue-500 hover:underline mb-4 inline-block">
+            <A href=RouteUrl::Home attr:class="text-blue-500 hover:underline mb-4 inline-block">
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
@@ -127,13 +170,20 @@ Effect::new(move || {
                     />
                 </svg>
 
-            </a>
+            </A>
             <form on:submit=on_submit class="space-y-6">
                 <h2 class="font-bold text-2xl mb-4 text-gray-900 dark:text-white text-center">
                     Create Day
                 </h2>
                 <div class="space-y-3">
+                    <label
+                        for="date-input"
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1 text-left"
+                    >
+                        Date
+                    </label>
                     <input
+                        id="date-input"
                         type="text"
                         placeholder="Date"
                         prop:value=date
@@ -141,10 +191,17 @@ Effect::new(move || {
                         class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-gray-800 dark:text-white"
                         required
                     />
+                    <label
+                        for="meal-select"
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1 text-left"
+                    >
+                        Meal
+                    </label>
                     <Transition fallback=move || {
                         view! { <span>"Loading..."</span> }
                     }>
                         <select
+                            id="meal-select"
                             prop:value=meal_id
                             on:change=move |ev| set_meal_id(
                                 event_target_value(&ev).parse().unwrap(),
@@ -157,12 +214,12 @@ Effect::new(move || {
                     </Transition>
                 </div>
 
-                <a
-                    href=RouteUrl::MealForm
-                    class="w-full py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition mb-2 flex items-center justify-center font-semibold"
+                <A
+                    href=RouteUrl::NewMeal
+                    attr:class="w-full py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition mb-2 flex items-center justify-center font-semibold"
                 >
                     "+ Add Meal"
-                </a>
+                </A>
                 <button
                     type="submit"
                     class="w-full py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition"

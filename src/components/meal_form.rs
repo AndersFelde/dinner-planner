@@ -2,6 +2,7 @@ use crate::app::RouteUrl;
 use crate::models::ingredient::IngredientForm;
 use crate::models::meal::MealForm;
 use leptos::prelude::*;
+use leptos_router::components::A;
 
 #[server]
 pub async fn create_meal_with_ingredients(
@@ -98,7 +99,7 @@ pub fn MealForm() -> impl IntoView {
 
     view! {
         <div class="max-w-lg mx-auto mt-8 p-6 bg-white dark:bg-gray-900 rounded-xl shadow-lg">
-            <a href=RouteUrl::Week class="text-blue-500 hover:underline mb-4 inline-block">
+            <A href=RouteUrl::Home attr:class="text-blue-500 hover:underline mb-4 inline-block">
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
@@ -114,10 +115,10 @@ pub fn MealForm() -> impl IntoView {
                     />
                 </svg>
 
-            </a>
+            </A>
             <form on:submit=on_submit class="space-y-6">
                 <h2 class="font-bold text-2xl mb-4 text-gray-900 dark:text-white text-center">
-                    Create Meal
+                    Update Meal
                 </h2>
                 <div class="space-y-3">
                     <input

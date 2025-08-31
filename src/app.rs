@@ -1,32 +1,33 @@
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
-    components::{Route, Router, Routes}, path, AsPath, StaticSegment
+    components::{Route, Router, Routes, ToHref}, path, AsPath, ParamSegment, PossibleRouteMatch, StaticSegment
 };
 use crate::components::{week::*, meal_form::*, day_form::*};
 
+// <Route path=path!("/") view=Week />
+// <Route path=path!("/new/meal") view=MealForm />
+// <Route path=path!("/edit/day/:id") view=DayForm />
 #[derive(Clone)]
 pub enum RouteUrl {
-    Week,
-    MealForm,
-    DayForm,
+    Home,
+    NewMeal,
+    EditDay{id: i32},
 }
-impl AsPath for RouteUrl {
-    fn as_path(&self ) -> &'static str{
+impl RouteUrl {
+    fn as_path(&self ) -> String {
         match self {
-            RouteUrl::Week => "/",
-            RouteUrl::MealForm => "/new_meal",
-            RouteUrl::DayForm => "/new_day",
+            RouteUrl::Home => "/".to_string(),
+            RouteUrl::NewMeal => "/new/meal".to_string(),
+            RouteUrl::EditDay{id} => format!("/edit/day/{id}"),
         }
-
     }
 }
 
-impl IntoAttributeValue for RouteUrl {
-    type Output = &'static str;
-
-    fn into_attribute_value(self) -> Self::Output {
-        self.as_path()
+impl ToHref for RouteUrl {
+    fn to_href(&self) -> Box<dyn Fn() -> std::string::String> {
+        let path = self.as_path();
+        Box::new(move || path.clone())
     }
 } 
 
@@ -72,9 +73,9 @@ pub fn App() -> impl IntoView {
         <Router>
             <main>
                 <Routes fallback=|| "Page not found.".into_view()>
-                    <Route path=StaticSegment(RouteUrl::Week) view=Week />
-                    <Route path=StaticSegment(RouteUrl::MealForm) view=MealForm />
-                    <Route path=StaticSegment(RouteUrl::DayForm) view=DayForm />
+                    <Route path=path!("/") view=Week />
+                    <Route path=path!("/new/meal") view=MealForm />
+                    <Route path=path!("/edit/day/:id") view=DayForm />
                 </Routes>
             </main>
         </Router>
