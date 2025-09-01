@@ -5,8 +5,7 @@ use chrono::{Datelike, Local, NaiveDate};
 use leptos::logging::log;
 use leptos::prelude::*;
 use leptos_router::components::A;
-use leptos_router::hooks::use_navigate;
-use leptos_router::hooks::use_params_map;
+use leptos_router::hooks::{use_location, use_navigate, use_params_map};
 
 #[server]
 pub async fn create_day_with_meal(day_form: DayForm) -> Result<usize, ServerFnError> {
@@ -63,7 +62,6 @@ pub async fn get_day(id: i32) -> Result<Day, ServerFnError> {
 // TODO: if date allready exists, edit
 #[component]
 pub fn DayForm() -> impl IntoView {
-    log!("Loading day form");
     let params = use_params_map();
     let (date, set_date) = signal(String::new());
     let (meal_id, set_meal_id) = signal(-1 as i32);
@@ -142,15 +140,15 @@ pub fn DayForm() -> impl IntoView {
             year: date.year(),
         };
         add_day_action.dispatch(day_form);
-        log!("add day action {:?}", add_day_action.value().get());
     };
 
     Effect::new(move || {
-        log!("Check redirect");
         if let Some(Ok(_)) = add_day_action.value().get() {
             navigate(&RouteUrl::Home.to_string(), Default::default());
         }
     });
+
+    let location = use_location();
 
     view! {
         <div class="max-w-lg mx-auto mt-8 p-6 bg-white dark:bg-gray-900 rounded-xl shadow-lg">
@@ -176,14 +174,10 @@ pub fn DayForm() -> impl IntoView {
                     Create Day
                 </h2>
                 <div class="space-y-3">
-                    <label
-                        for="date-input"
-                        class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1 text-left"
-                    >
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1 text-left">
                         Date
                     </label>
                     <input
-                        id="date-input"
                         type="text"
                         placeholder="Date"
                         prop:value=date
@@ -191,31 +185,23 @@ pub fn DayForm() -> impl IntoView {
                         class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-gray-800 dark:text-white"
                         required
                     />
-                    <label
-                        for="meal-select"
-                        class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1 text-left"
-                    >
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1 text-left">
                         Meal
                     </label>
-                    <Transition fallback=move || {
-                        view! { <span>"Loading..."</span> }
-                    }>
-                        <select
-                            id="meal-select"
-                            prop:value=meal_id
-                            on:change=move |ev| set_meal_id(
-                                event_target_value(&ev).parse().unwrap(),
-                            )
-                            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-gray-800 dark:text-white"
-                            required
-                        >
-                            {move || meals_data}
-                        </select>
-                    </Transition>
+                    <select
+                        prop:value=meal_id
+                        on:change=move |ev| set_meal_id(event_target_value(&ev).parse().unwrap())
+                        class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-gray-800 dark:text-white"
+                        required
+                    >
+                        <Transition fallback=move || {
+                            view! { <span>"Loading..."</span> }
+                        }>{move || meals_data}</Transition>
+                    </select>
                 </div>
 
                 <A
-                    href=RouteUrl::NewMeal
+                    href=move || RouteUrl::NewMeal.redirect(location.pathname.get())
                     attr:class="w-full py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition mb-2 flex items-center justify-center font-semibold"
                 >
                     "+ Add Meal"

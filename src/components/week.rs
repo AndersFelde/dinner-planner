@@ -1,6 +1,7 @@
 use crate::models::day::DayWithMeal;
 use leptos::logging::log;
 use leptos::prelude::*;
+use leptos_router::hooks::use_query;
 
 use crate::components::day_preview::*;
 
@@ -71,13 +72,10 @@ pub async fn days_for_week(_week: Week) -> Result<[DayWithMeal; 7], ServerFnErro
                         year: _date.year(),
                         meal_id: None,
                     };
-                    log!(
-                        "Inserting day: {}",
-                        insert_into(days::table)
-                            .values(&day_form)
-                            .execute(db)
-                            .unwrap()
-                    )
+                    insert_into(days::table)
+                        .values(&day_form)
+                        .execute(db)
+                        .unwrap();
                 }
             }
         }
@@ -144,10 +142,24 @@ impl Week {
         Week::new(week as u32, year)
     }
 }
-
+use leptos::Params;
+use leptos_router::params::Params;
+#[derive(Params, PartialEq)]
+struct WeekQuery {
+    week: u32,
+    year: i32,
+}
 #[component]
 pub fn Week() -> impl IntoView {
+    // TODO: control selected week only based on query, dont use week structure
+    let query = use_query::<WeekQuery>();
+
     let (week, set_week) = signal(Week::current());
+    Effect::new(move || {
+        if let Some(query) = query.read().as_ref().ok() {
+            set_week(Week::new(query.week, query.year));
+        }
+    });
     let days_resource = Resource::new(move || week.get(), |week| days_for_week(week));
     let days_data = move || {
         days_resource.get().map(|val| {

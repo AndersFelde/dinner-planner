@@ -22,6 +22,10 @@ impl RouteUrl {
             RouteUrl::EditDay{id} => format!("/edit/day/{id}"),
         }
     }
+
+    pub fn redirect(&self, url: String) -> String {
+        format!("{}?redirect={}", self.as_path(), url)
+    }
 }
 
 impl ToHref for RouteUrl {

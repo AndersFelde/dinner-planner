@@ -18,14 +18,6 @@ pub struct MealForm {
     pub recipie_url: Option<String>,
 }
 
-#[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
-pub struct MealWithIngredientsForm {
-    pub name: String,
-    pub image: Option<String>,
-    pub recipie_url: Option<String>,
-    pub ingredients: Vec<IngredientForm>,
-}
-
 #[cfg_attr(feature = "ssr", derive(Queryable, Selectable))]
 #[cfg_attr(feature = "ssr", diesel(table_name = crate::schema::meals))]
 #[cfg_attr(feature = "ssr", diesel(check_for_backend(diesel::sqlite::Sqlite)))]
@@ -34,6 +26,6 @@ pub struct MealWithIngredientsForm {
 pub struct Meal {
     pub id: i32,
     pub name: String,
-    pub image: Option<String>,
+    pub image: String,
     pub recipie_url: Option<String>,
 }

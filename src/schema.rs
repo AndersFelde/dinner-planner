@@ -24,7 +24,7 @@ diesel::table! {
     meals (id) {
         id -> Integer,
         name -> Text,
-        image -> Nullable<Text>,
+        image -> Text,
         recipie_url -> Nullable<Text>,
     }
 }
