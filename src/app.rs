@@ -3,7 +3,7 @@ use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
     components::{Route, Router, Routes, ToHref}, path, AsPath, ParamSegment, PossibleRouteMatch, StaticSegment
 };
-use crate::components::{week::*, meal_form::*, day_form::*};
+use crate::components::{day_form::*, meal_form::*, shopping_list::ShoppingList, week::*};
 
 // <Route path=path!("/") view=Week />
 // <Route path=path!("/new/meal") view=MealForm />
@@ -13,6 +13,7 @@ pub enum RouteUrl {
     Home,
     NewMeal,
     EditDay{id: i32},
+    ShoppingList{week: u32, year: i32},
 }
 impl RouteUrl {
     fn as_path(&self ) -> String {
@@ -20,6 +21,7 @@ impl RouteUrl {
             RouteUrl::Home => "/".to_string(),
             RouteUrl::NewMeal => "/new/meal".to_string(),
             RouteUrl::EditDay{id} => format!("/edit/day/{id}"),
+            RouteUrl::ShoppingList{week, year} => format!("/shopping-list/{year}/{week}"),
         }
     }
 
@@ -80,6 +82,7 @@ pub fn App() -> impl IntoView {
                     <Route path=path!("/") view=Week />
                     <Route path=path!("/new/meal") view=MealForm />
                     <Route path=path!("/edit/day/:id") view=DayForm />
+                    <Route path=path!("/shopping-list/:year/:week") view=ShoppingList />
                 </Routes>
             </main>
         </Router>

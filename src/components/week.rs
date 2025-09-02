@@ -1,7 +1,7 @@
-use crate::models::day::DayWithMeal;
+use crate::{app::RouteUrl, models::day::DayWithMeal};
 use leptos::logging::log;
 use leptos::prelude::*;
-use leptos_router::hooks::use_query;
+use leptos_router::{components::A, hooks::use_query};
 
 use crate::components::day_preview::*;
 
@@ -144,14 +144,13 @@ impl Week {
 }
 use leptos::Params;
 use leptos_router::params::Params;
-#[derive(Params, PartialEq)]
-struct WeekQuery {
-    week: u32,
-    year: i32,
+#[derive(Params, PartialEq, Clone)]
+pub struct WeekQuery {
+    pub week: u32,
+    pub year: i32,
 }
 #[component]
 pub fn Week() -> impl IntoView {
-    // TODO: control selected week only based on query, dont use week structure
     let query = use_query::<WeekQuery>();
 
     let (week, set_week) = signal(Week::current());
@@ -173,8 +172,35 @@ pub fn Week() -> impl IntoView {
     };
 
     view! {
+        <A href=move || {
+            let w = week.get();
+            RouteUrl::ShoppingList {
+                week: w.week,
+                year: w.year,
+            }
+                .to_string()
+        }>
+            <button
+                type="button"
+                class="fixed bottom-4 right-4 z-50 px-4 py-3 rounded-full bg-green-500 text-white font-semibold text-base shadow-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400 transition flex items-center justify-center whitespace-nowrap"
+                title="View shopping list"
+            >
+                <svg
+                    class="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M3 7h18M3 12h18M3 17h18"
+                    />
+                </svg>
+            </button>
+        </A>
         <div class="flex flex-col gap-4">
-            // Sticky navigation bar with nice SVG arrows
             <div class="flex justify-center items-center gap-4 mb-2 sticky top-0 z-10 bg-white dark:bg-gray-800 py-2 shadow">
                 <button
                     class="w-32 px-3 py-2 rounded-lg bg-blue-500 text-white font-semibold text-base shadow hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 transition flex items-center justify-center whitespace-nowrap"
@@ -213,6 +239,7 @@ pub fn Week() -> impl IntoView {
                 </button>
             </div>
             // Centered vertical card list
+            // TODO: add "Get shopping list button"
             <div class="flex flex-col gap-4 py-2 items-center">
                 <Transition fallback=move || {
                     view! { <p>"Loading..."</p> }

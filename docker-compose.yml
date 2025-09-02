@@ -1,0 +1,16 @@
+version: "3.9"
+
+services:
+  dinner-planner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: dinner-planner:latest
+    container_name: dinner-planner
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./env
+    volumes:
+      - ./db.sqlite3:/app/db.sqlite3
+    restart: unless-stopped

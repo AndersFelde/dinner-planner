@@ -60,7 +60,7 @@ pub fn DayPreview(day: DayWithMeal) -> impl IntoView {
     );
     match day.meal {
         Some(meal) => Either::Left(view! {
-            <div class=card_classes node_ref=node_ref>
+            <div id=format!("day-{}", day.day.id) class=card_classes node_ref=node_ref>
 
                 <A href=RouteUrl::EditDay {
                     id: day.day.id,
@@ -141,7 +141,7 @@ pub fn DayPreview(day: DayWithMeal) -> impl IntoView {
             <A href=RouteUrl::EditDay {
                 id: day.day.id,
             }>
-                <div class=card_classes node_ref=node_ref>
+                <div id=format!("day-{}", day.day.id) class=card_classes node_ref=node_ref>
                     // Header
                     <div class="p-4 border-b border-gray-200 dark:border-gray-700">
                         <h4 class="text-lg font-semibold text-gray-900 dark:text-white">
