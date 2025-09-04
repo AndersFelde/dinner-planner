@@ -1,8 +1,11 @@
 # Get started with a build env with Rust nightly
-FROM rustlang/rust:nightly-alpine as builder
+FROM rustlang/rust:nightly-alpine AS builder
 
 RUN apk update && \
-    apk add --no-cache bash curl npm libc-dev binaryen sqlite sqlite-dev
+    apk add --no-cache bash curl npm libc-dev binaryen \
+    sqlite sqlite-dev sqlite-static \
+    openssl openssl-dev openssl-libs-static \
+    pkgconfig
 
 RUN npm install -g sass
 
@@ -16,11 +19,11 @@ COPY . .
 
 RUN cargo leptos build --release -vv
 
-FROM rustlang/rust:nightly-alpine as runner
+FROM rustlang/rust:nightly-alpine AS runner
 
 WORKDIR /app
 
-COPY --from=builder /work/target/release/leptos_start /app/
+COPY --from=builder /work/target/release/dinner-planner /app/
 COPY --from=builder /work/target/site /app/site
 COPY --from=builder /work/Cargo.toml /app/
 
@@ -29,4 +32,4 @@ ENV LEPTOS_SITE_ADDR="0.0.0.0:8080"
 ENV LEPTOS_SITE_ROOT=./site
 EXPOSE 8080
 
-CMD ["/app/leptos_start"]
+CMD ["/app/dinner-planner"]

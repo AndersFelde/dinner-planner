@@ -171,7 +171,7 @@ pub fn DayForm() -> impl IntoView {
             </A>
             <form on:submit=on_submit class="space-y-6">
                 <h2 class="font-bold text-2xl mb-4 text-gray-900 dark:text-white text-center">
-                    Create Day
+                    Update Day
                 </h2>
                 <div class="space-y-3">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1 text-left">
@@ -210,7 +210,7 @@ pub fn DayForm() -> impl IntoView {
                     type="submit"
                     class="w-full py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition"
                 >
-                    "Create Day"
+                    "Update day"
                 </button>
             </form>
         </div>

@@ -68,17 +68,14 @@ pub fn ShoppingList() -> impl IntoView {
                     );
                     match &day.meal {
                         Some(meal) => Either::Left(view! {
-                            <div class="mb-6 p-4 rounded-lg shadow bg-white dark:bg-gray-900">
+                            <div class="mb-6 p-4 rounded-lg shadow bg-white dark:bg-gray-800">
                                 <h2 class="text-lg font-bold text-gray-800 dark:text-gray-100 mb-1">
                                     {header}
                                 </h2>
                                 <h3 class="text-md font-semibold text-blue-700 dark:text-blue-300 mb-2">
                                     {meal.meal.name.clone()}
                                 </h3>
-                                <div class="mb-2 text-gray-700 dark:text-gray-200">
-                                    Ingredients:
-                                </div>
-                                <ul class="flex flex-wrap gap-2">
+                                <ul class="flex justify-center items-center flex-wrap gap-2">
                                     {meal
                                         .ingredients
                                         .iter()
@@ -122,7 +119,7 @@ pub fn ShoppingList() -> impl IntoView {
                             </div>
                         }),
                         None => Either::Right(view! {
-                            <div class="mb-6 p-4 rounded-lg shadow bg-white dark:bg-gray-900">
+                            <div class="mb-6 p-4 rounded-lg shadow bg-white dark:bg-gray-800">
                                 <h2 class="text-lg font-bold text-gray-800 dark:text-gray-100 mb-1">
                                     {header}
                                 </h2>
@@ -144,7 +141,7 @@ pub fn ShoppingList() -> impl IntoView {
         }>
             <button
                 type="button"
-                class="fixed bottom-4 right-4 z-50 px-4 py-3 rounded-full bg-green-500 text-white font-semibold text-base shadow-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400 transition flex items-center justify-center whitespace-nowrap"
+                class="fixed bottom-4 right-4 z-50 px-4 py-3 rounded-full bg-blue-500 text-white font-semibold text-base shadow-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400 transition flex items-center justify-center whitespace-nowrap"
                 title="View shopping list"
             >
                 <svg
@@ -163,13 +160,20 @@ pub fn ShoppingList() -> impl IntoView {
                 </svg>
             </button>
         </A>
-        <div class="max-w-2xl mx-auto mt-8">
+        <div class="flex justify-center items-center gap-4 mb-2 sticky top-0 z-10 bg-white dark:bg-gray-800 py-2 shadow">
+            <span class="font-bold text-base text-gray-900 dark:text-white">
+                {move || {
+                    format!(
+                        "Shopping list - Week {}",
+                        query.read().as_ref().ok().cloned().unwrap().week,
+                    )
+                }}
+            </span>
+        </div>
+        <div class="max-w-2xl mx-8 mt-8">
             <Transition fallback=move || {
                 view! { <p class="text-center text-gray-500 dark:text-gray-400">"Loading..."</p> }
             }>
-                <h1 class="text-2xl font-bold mb-6 text-center text-gray-900 dark:text-white">
-                    Shopping List
-                </h1>
                 {move || days_data()}
             </Transition>
         </div>
