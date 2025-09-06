@@ -82,7 +82,7 @@ pub fn App() -> impl IntoView {
             <main>
                 <Routes fallback=|| "Page not found.".into_view()>
                     <Route path=path!("/") view=Week />
-                    <Route path=path!("/new/meal") view=MealForm />
+                    <Route path=path!("/new/meal") view=CreateMealForm />
                     <Route path=path!("/edit/day/:id") view=DayForm />
                     <Route path=path!("/shopping-list/:year/:week") view=ShoppingList />
                     <Route path=path!("/meals") view=MealList />

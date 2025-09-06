@@ -44,6 +44,7 @@ pub async fn get_all_meals_with_ingredients(
     Ok(meals_with_ingredients)
 }
 
+#[component]
 pub fn MealList() -> impl IntoView {
     let meals_resource = OnceResource::new(get_all_meals_with_ingredients());
     let meals_data = move || {

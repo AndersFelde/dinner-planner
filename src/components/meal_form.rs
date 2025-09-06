@@ -1,10 +1,10 @@
 use crate::app::RouteUrl;
 use crate::models::ingredient::IngredientForm;
-use crate::models::meal::MealForm;
+use crate::models::meal::{Meal, MealForm, MealWithIngredients};
 use leptos::logging::log;
 use leptos::prelude::*;
 use leptos_router::components::A;
-use leptos_router::hooks::{use_navigate, use_query_map};
+use leptos_router::hooks::{use_navigate, use_params_map, use_query_map};
 
 #[derive(serde::Deserialize, Debug)]
 pub struct GoogleImageResult {
@@ -45,6 +45,57 @@ pub async fn get_image_url(query: String) -> Result<String, ServerFnError> {
     Ok(data.items[0].link.clone())
 }
 #[server]
+pub async fn get_meal(id: i32) -> Result<MealWithIngredients, ServerFnError> {
+    use crate::db::*;
+    use crate::models::ingredient::*;
+    use crate::models::meal::*;
+    use crate::schema::ingredients;
+    use crate::schema::meals;
+    use diesel::prelude::*;
+
+    let db = &mut use_context::<Db>()
+        .ok_or(ServerFnError::new("Missing Db context"))?
+        .get()
+        .map_err(|_| ServerFnError::new("Failed to get Db connection"))?;
+
+    Ok(MealWithIngredients {
+        meal: meals::table
+            .filter(meals::id.eq(id))
+            .first::<Meal>(db)
+            .map_err(|e| ServerFnError::new(format!("Database error: {}", e)))?,
+        ingredients: ingredients::table
+            .filter(ingredients::meal_id.eq(id))
+            .load::<Ingredient>(db)?,
+    })
+}
+#[server]
+pub async fn update_meal_with_ingredients(
+    meal: Meal,
+    ingredient_forms: Vec<IngredientForm>,
+) -> Result<(), ServerFnError> {
+    use crate::db::*;
+    use crate::models::meal::*;
+    use crate::schema::ingredients;
+    use crate::schema::meals;
+    use diesel::dsl::update;
+    use diesel::prelude::*;
+
+    let mut meal_form = meal_form.clone();
+    let db = &mut use_context::<Db>()
+        .ok_or(ServerFnError::new("Missing Db context"))?
+        .get()
+        .map_err(|_| ServerFnError::new("Failed to get Db connection"))?;
+    update(meals::table).set(meal).execute(db).unwrap();
+    for mut ingredient_form in ingredient_forms {
+        ingredient_form.meal_id = Some(meal.id);
+        insert_into(ingredients::table)
+            .values(&ingredient_form)
+            .execute(db)
+            .unwrap();
+    }
+    Ok(())
+}
+#[server]
 pub async fn create_meal_with_ingredients(
     meal_form: MealForm,
     ingredient_forms: Vec<IngredientForm>,
@@ -78,19 +129,119 @@ pub async fn create_meal_with_ingredients(
     Ok(())
 }
 #[component]
-pub fn MealForm() -> impl IntoView {
+pub fn UpdateMealForm() -> impl IntoView {
+    let params = use_params_map();
+    let meal_resource = Resource::new(
+        move || {
+            params
+                .read()
+                .get("id")
+                .and_then(|id| id.parse::<i32>().ok())
+        },
+        move |id| async move {
+            match id {
+                Some(id) => get_meal(id).await.map(Some),
+                None => Ok(None),
+            }
+        },
+    );
+    let add_meal_action = Action::new(|input: &(MealForm, Vec<IngredientForm>)| {
+        let meal_form = input.0.clone();
+        let ingredients = input.1.clone();
+        async move { create_meal_with_ingredients(meal_form, ingredients).await }
+    });
+    let query = use_query_map();
+    let navigate = use_navigate();
+    Effect::new(move || {
+        if let Some(Ok(_)) = add_meal_action.value().get() {
+            if let Some(url) = query.read().get("redirect") {
+                navigate(&url, Default::default());
+            } else {
+                navigate(&RouteUrl::Home.to_string(), Default::default());
+            }
+        }
+    });
+    let on_submit = move |meal_form: MealForm, ingredient_forms: Vec<IngredientForm>| {
+        add_meal_action.dispatch((meal_form, ingredient_forms));
+    };
+    view! {
+        <Suspense fallback=move || {
+            view! { <span>"Loading..."</span> }
+        }>
+            {move || {
+                if let Some(Ok(meal)) = meal_resource.get() {
+                    view! { <MealForm meal=meal on_submit=on_submit /> }.into_any()
+                } else {
+                    view! { <span>"Unable to show meal"</span> }.into_any()
+                }
+            }}
+        </Suspense>
+    }
+}
+#[component]
+pub fn CreateMealForm() -> impl IntoView {
+    let add_meal_action = Action::new(|input: &(MealForm, Vec<IngredientForm>)| {
+        let meal_form = input.0.clone();
+        let ingredients = input.1.clone();
+        async move { create_meal_with_ingredients(meal_form, ingredients).await }
+    });
+    let query = use_query_map();
+    let navigate = use_navigate();
+    Effect::new(move || {
+        if let Some(Ok(_)) = add_meal_action.value().get() {
+            if let Some(url) = query.read().get("redirect") {
+                navigate(&url, Default::default());
+            } else {
+                navigate(&RouteUrl::Home.to_string(), Default::default());
+            }
+        }
+    });
+    let on_submit = move |meal_form: MealForm, ingredient_forms: Vec<IngredientForm>| {
+        add_meal_action.dispatch((meal_form, ingredient_forms));
+    };
+    view! { <MealForm meal=None on_submit=on_submit /> }
+}
+
+#[component]
+pub fn MealForm<A>(meal: Option<MealWithIngredients>, on_submit: A) -> impl IntoView
+where
+    A: Fn(MealForm, Vec<IngredientForm>) + 'static,
+{
     // Signals for meal fields
-    let (name, set_name) = signal(String::new());
-    let (image, set_image) = signal(String::new());
-    let (recipie_url, set_recipie_url) = signal(String::new());
+    let (name, image, recipie_url, ingredients) = if let Some(meal) = meal {
+        (
+            meal.meal.name,
+            meal.meal.image,
+            meal.meal.recipie_url.unwrap_or_default(),
+            meal.ingredients
+                .iter()
+                .map(|ingredient| IngredientForm {
+                    name: ingredient.name.clone(),
+                    amount: ingredient.amount,
+                    bought: ingredient.bought,
+                    meal_id: ingredient.meal_id,
+                })
+                .collect(),
+        )
+    } else {
+        (
+            String::new(),
+            String::new(),
+            String::new(),
+            vec![IngredientForm {
+                name: String::from(""),
+                amount: 1,
+                bought: false,
+                meal_id: None,
+            }],
+        )
+    };
+    let (name, set_name) = signal(name);
+    let (image, set_image) = signal(image);
+    let (recipie_url, set_recipie_url) = signal(recipie_url);
 
     // Signals for dynamic ingredient fields
-    let (ingredients, set_ingredients) = signal(vec![IngredientForm {
-        name: String::from(""),
-        amount: 1,
-        bought: false,
-        meal_id: None,
-    }]);
+    let (ingredients, set_ingredients) = signal(ingredients);
 
     // Add new ingredient field
     let add_ingredient = move |_| {
@@ -112,14 +263,9 @@ pub fn MealForm() -> impl IntoView {
             }
         });
     };
-    let add_meal_action = Action::new(|input: &(MealForm, Vec<IngredientForm>)| {
-        let meal_form = input.0.clone();
-        let ingredients = input.1.clone();
-        async move { create_meal_with_ingredients(meal_form, ingredients).await }
-    });
 
     // Handle form submission (pseudo-code, replace with your server call)
-    let on_submit = move |ev: leptos::ev::SubmitEvent| {
+    let form_submit = move |ev: leptos::ev::SubmitEvent| {
         ev.prevent_default();
         let meal = MealForm {
             name: name.get(),
@@ -136,19 +282,8 @@ pub fn MealForm() -> impl IntoView {
         };
         let ingredients_vec = ingredients.get();
         // Call your server function to save meal and ingredients here
-        add_meal_action.dispatch((meal, ingredients_vec));
+        on_submit(meal, ingredients_vec);
     };
-    let query = use_query_map();
-    let navigate = use_navigate();
-    Effect::new(move || {
-        if let Some(Ok(_)) = add_meal_action.value().get() {
-            if let Some(url) = query.read().get("redirect") {
-                navigate(&url, Default::default());
-            } else {
-                navigate(&RouteUrl::Home.to_string(), Default::default());
-            }
-        }
-    });
 
     view! {
         <div class="max-w-lg mx-auto mt-8 p-6 bg-white dark:bg-gray-900 rounded-xl shadow-lg">
@@ -169,7 +304,7 @@ pub fn MealForm() -> impl IntoView {
                 </svg>
 
             </A>
-            <form on:submit=on_submit class="space-y-6">
+            <form on:submit=form_submit class="space-y-6">
                 <h2 class="font-bold text-2xl mb-4 text-gray-900 dark:text-white text-center">
                     Update Meal
                 </h2>
