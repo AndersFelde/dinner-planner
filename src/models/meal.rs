@@ -10,15 +10,15 @@ pub struct MealWithIngredients {
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
-#[cfg_attr(feature = "ssr", derive(Insertable, AsChangeset))]
+#[cfg_attr(feature = "ssr", derive(Insertable))]
 #[cfg_attr(feature = "ssr", diesel(table_name = crate::schema::meals))]
 pub struct MealForm {
     pub name: String,
-    pub image: Option<String>,
+    pub image: String,
     pub recipie_url: Option<String>,
 }
 
-#[cfg_attr(feature = "ssr", derive(Queryable, Selectable))]
+#[cfg_attr(feature = "ssr", derive(Queryable, Selectable, AsChangeset))]
 #[cfg_attr(feature = "ssr", diesel(table_name = crate::schema::meals))]
 #[cfg_attr(feature = "ssr", diesel(check_for_backend(diesel::sqlite::Sqlite)))]
 #[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]

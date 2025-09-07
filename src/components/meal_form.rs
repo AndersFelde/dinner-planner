@@ -1,6 +1,7 @@
 use crate::app::RouteUrl;
 use crate::models::ingredient::IngredientForm;
 use crate::models::meal::{Meal, MealForm, MealWithIngredients};
+use leptos::either::Either;
 use leptos::logging::log;
 use leptos::prelude::*;
 use leptos_router::components::A;
@@ -16,6 +17,11 @@ pub struct GoogleImageResult {
 pub struct ImageItem {
     pub link: String,
     // Add more fields as needed
+}
+#[cfg(feature = "ssr")]
+pub fn is_valid_url(url: &str) -> bool {
+    use url::Url;
+    Url::parse(url).is_ok()
 }
 #[cfg(feature = "ssr")]
 pub async fn get_image_url(query: String) -> Result<String, ServerFnError> {
@@ -74,24 +80,27 @@ pub async fn update_meal_with_ingredients(
     ingredient_forms: Vec<IngredientForm>,
 ) -> Result<(), ServerFnError> {
     use crate::db::*;
-    use crate::models::meal::*;
     use crate::schema::ingredients;
     use crate::schema::meals;
-    use diesel::dsl::update;
+    use diesel::dsl::{delete, insert_into, update};
     use diesel::prelude::*;
 
-    let mut meal_form = meal_form.clone();
     let db = &mut use_context::<Db>()
         .ok_or(ServerFnError::new("Missing Db context"))?
         .get()
         .map_err(|_| ServerFnError::new("Failed to get Db connection"))?;
-    update(meals::table).set(meal).execute(db).unwrap();
+    update(meals::table).set(meal.clone()).execute(db).unwrap();
+    // This is kinda hacky, but easy
+    delete(ingredients::table)
+        .filter(ingredients::meal_id.eq(meal.id))
+        .execute(db)
+        .map_err(|e| ServerFnError::new(format!("DB error: {e}")))?;
     for mut ingredient_form in ingredient_forms {
         ingredient_form.meal_id = Some(meal.id);
         insert_into(ingredients::table)
             .values(&ingredient_form)
             .execute(db)
-            .unwrap();
+            .map_err(|e| ServerFnError::new(format!("DB error: {e}")))?;
     }
     Ok(())
 }
@@ -112,8 +121,8 @@ pub async fn create_meal_with_ingredients(
         .ok_or(ServerFnError::new("Missing Db context"))?
         .get()
         .map_err(|_| ServerFnError::new("Failed to get Db connection"))?;
-    if meal_form.image.is_none() {
-        meal_form.image = Some(get_image_url(meal_form.name.clone()).await?)
+    if !is_valid_url(&meal_form.image) {
+        meal_form.image = get_image_url(meal_form.name.clone()).await?
     }
     let meal: Meal = insert_into(meals::table)
         .values(&meal_form)
@@ -145,38 +154,61 @@ pub fn UpdateMealForm() -> impl IntoView {
             }
         },
     );
-    let add_meal_action = Action::new(|input: &(MealForm, Vec<IngredientForm>)| {
-        let meal_form = input.0.clone();
+    let add_meal_action = Action::new(|input: &(Meal, Vec<IngredientForm>)| {
+        let meal = input.0.clone();
         let ingredients = input.1.clone();
-        async move { create_meal_with_ingredients(meal_form, ingredients).await }
+        log!("Ingredients: {ingredients:?}");
+        async move { update_meal_with_ingredients(meal, ingredients).await }
     });
     let query = use_query_map();
     let navigate = use_navigate();
+    let redirect = move || {
+        if let Some(url) = query.read().get("redirect") {
+            navigate(&url, Default::default());
+        } else {
+            navigate(&RouteUrl::Home.to_string(), Default::default());
+        }
+    };
     Effect::new(move || {
         if let Some(Ok(_)) = add_meal_action.value().get() {
-            if let Some(url) = query.read().get("redirect") {
-                navigate(&url, Default::default());
-            } else {
-                navigate(&RouteUrl::Home.to_string(), Default::default());
-            }
+            redirect();
         }
     });
-    let on_submit = move |meal_form: MealForm, ingredient_forms: Vec<IngredientForm>| {
-        add_meal_action.dispatch((meal_form, ingredient_forms));
-    };
+    // match meal_resource.get() {
+    //     Some(Ok(meal)) => Either::Left({
     view! {
         <Suspense fallback=move || {
             view! { <span>"Loading..."</span> }
         }>
             {move || {
-                if let Some(Ok(meal)) = meal_resource.get() {
-                    view! { <MealForm meal=meal on_submit=on_submit /> }.into_any()
-                } else {
-                    view! { <span>"Unable to show meal"</span> }.into_any()
+                match meal_resource.get() {
+                    Some(Ok(Some(meal))) => {
+                        let id = meal.meal.id.clone();
+                        let on_submit = move |
+                            meal_form: MealForm,
+                            ingredient_forms: Vec<IngredientForm>|
+                        {
+                            add_meal_action
+                                .dispatch((
+                                    Meal {
+                                        id,
+                                        name: meal_form.name,
+                                        image: meal_form.image,
+                                        recipie_url: meal_form.recipie_url,
+                                    },
+                                    ingredient_forms,
+                                ));
+                        };
+                        Either::Left({
+                            view! { <MealForm meal=Some(meal) on_submit=on_submit /> }.into_any()
+                        })
+                    }
+                    _ => Either::Right({ view! { <span>"Unable to show meal"</span> }.into_any() }),
                 }
             }}
         </Suspense>
     }
+    // if let Some(Ok(meal)) = meal_resource.get() {
 }
 #[component]
 pub fn CreateMealForm() -> impl IntoView {
@@ -187,15 +219,20 @@ pub fn CreateMealForm() -> impl IntoView {
     });
     let query = use_query_map();
     let navigate = use_navigate();
+    // TODO: move into meal form
+    let redirect = move || {
+        if let Some(url) = query.read().get("redirect") {
+            navigate(&url, Default::default());
+        } else {
+            navigate(&RouteUrl::Home.to_string(), Default::default());
+        }
+    };
     Effect::new(move || {
         if let Some(Ok(_)) = add_meal_action.value().get() {
-            if let Some(url) = query.read().get("redirect") {
-                navigate(&url, Default::default());
-            } else {
-                navigate(&RouteUrl::Home.to_string(), Default::default());
-            }
+            redirect();
         }
     });
+
     let on_submit = move |meal_form: MealForm, ingredient_forms: Vec<IngredientForm>| {
         add_meal_action.dispatch((meal_form, ingredient_forms));
     };
@@ -208,7 +245,7 @@ where
     A: Fn(MealForm, Vec<IngredientForm>) + 'static,
 {
     // Signals for meal fields
-    let (name, image, recipie_url, ingredients) = if let Some(meal) = meal {
+    let (name, image, recipie_url, ingredients) = if let Some(meal) = meal.clone() {
         (
             meal.meal.name,
             meal.meal.image,
@@ -269,11 +306,7 @@ where
         ev.prevent_default();
         let meal = MealForm {
             name: name.get(),
-            image: if image.get().is_empty() {
-                None
-            } else {
-                Some(image.get())
-            },
+            image: image.get(),
             recipie_url: if recipie_url.get().is_empty() {
                 None
             } else {
@@ -352,6 +385,32 @@ where
                                     <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border mb-2">
                                         <div class="flex flex-nowrap gap-2 items-center">
                                             // Ingredient name input
+                                            <Show
+                                                when=move || { ingredients.get().len() > 1 }
+                                                fallback=|| ()
+                                            >
+                                                <button
+                                                    type="button"
+                                                    on:click=move |_| remove_ingredient(idx)
+                                                    class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition"
+                                                >
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        fill="none"
+                                                        viewBox="0 0 24 24"
+                                                        stroke-width="1.5"
+                                                        stroke="currentColor"
+                                                        class="size-6"
+                                                    >
+                                                        <path
+                                                            stroke-linecap="round"
+                                                            stroke-linejoin="round"
+                                                            d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
+                                                        />
+                                                    </svg>
+
+                                                </button>
+                                            </Show>
                                             <input
                                                 type="text"
                                                 placeholder="Ingredient name"
@@ -360,7 +419,7 @@ where
                                                     set_ingredients
                                                         .update(|ings| ings[idx].name = ev.target().value())
                                                 }
-                                                class="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-gray-700 dark:text-white"
+                                                class="px-3 py-2 w-40 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-gray-700 dark:text-white"
                                                 required
                                             />
                                             // Amount display and buttons
@@ -410,14 +469,7 @@ where
                                                 />
                                                 "Bought"
                                             </label>
-                                            // Remove ingredient button
-                                            <button
-                                                type="button"
-                                                on:click=move |_| remove_ingredient(idx)
-                                                class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition"
-                                            >
-                                                "Remove"
-                                            </button>
+                                        // Remove ingredient button
                                         </div>
                                     </div>
                                 }
@@ -436,7 +488,7 @@ where
                     type="submit"
                     class="w-full py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition"
                 >
-                    "Create Meal"
+                    {if meal.is_some() { "Update Meal" } else { "Create Meal" }}
                 </button>
             </form>
         </div>

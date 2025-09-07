@@ -14,6 +14,7 @@ pub enum RouteUrl {
     NewMeal,
     MealList,
     EditDay{id: i32},
+    EditMeal{id: i32},
     ShoppingList{week: u32, year: i32},
 }
 impl RouteUrl {
@@ -23,6 +24,7 @@ impl RouteUrl {
             RouteUrl::NewMeal => "/new/meal".to_string(),
             RouteUrl::MealList => "/meals".to_string(),
             RouteUrl::EditDay{id} => format!("/edit/day/{id}"),
+            RouteUrl::EditMeal{id} => format!("/edit/meal/{id}"),
             RouteUrl::ShoppingList{week, year} => format!("/shopping-list/{year}/{week}"),
         }
     }
@@ -84,6 +86,7 @@ pub fn App() -> impl IntoView {
                     <Route path=path!("/") view=Week />
                     <Route path=path!("/new/meal") view=CreateMealForm />
                     <Route path=path!("/edit/day/:id") view=DayForm />
+                    <Route path=path!("/edit/meal/:id") view=UpdateMealForm />
                     <Route path=path!("/shopping-list/:year/:week") view=ShoppingList />
                     <Route path=path!("/meals") view=MealList />
 
