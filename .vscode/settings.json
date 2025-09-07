@@ -13,5 +13,8 @@
         "/home/kippster/.cargo/bin/leptosfmt",
         "--stdin",
         "--rustfmt"
+    ],
+    "conventionalCommits.scopes": [
+        "docker"
     ]
 }
