@@ -18,7 +18,10 @@ pub struct MealForm {
     pub recipie_url: Option<String>,
 }
 
-#[cfg_attr(feature = "ssr", derive(Queryable, Selectable, AsChangeset))]
+#[cfg_attr(
+    feature = "ssr",
+    derive(Queryable, Selectable, AsChangeset, Identifiable)
+)]
 #[cfg_attr(feature = "ssr", diesel(table_name = crate::schema::meals))]
 #[cfg_attr(feature = "ssr", diesel(check_for_backend(diesel::sqlite::Sqlite)))]
 #[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]

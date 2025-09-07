@@ -11,12 +11,19 @@ diesel::table! {
 }
 
 diesel::table! {
+    days_ingredients (day_id, ingredient_id) {
+        day_id -> Integer,
+        ingredient_id -> Integer,
+        bought -> Bool,
+    }
+}
+
+diesel::table! {
     ingredients (id) {
         id -> Integer,
         name -> Text,
         amount -> Integer,
-        bought -> Bool,
-        meal_id -> Nullable<Integer>,
+        meal_id -> Integer,
     }
 }
 
@@ -29,10 +36,14 @@ diesel::table! {
     }
 }
 
+diesel::joinable!(days -> meals (meal_id));
+diesel::joinable!(days_ingredients -> days (day_id));
+diesel::joinable!(days_ingredients -> ingredients (ingredient_id));
 diesel::joinable!(ingredients -> meals (meal_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     days,
+    days_ingredients,
     ingredients,
     meals,
 );

@@ -1,36 +1,18 @@
 use crate::app::RouteUrl;
-use crate::models::day::*;
-use crate::models::ingredient::*;
-use crate::models::meal::*;
-use chrono::{Datelike, Local, NaiveDate, Weekday};
+use crate::models::days_ingredients::DayWithMealAndIngredients;
+use chrono::{Datelike, Local};
 use leptos::{
     either::Either,
-    html::{Div, HtmlElement, Input},
-    logging::log,
+    html::Div,
     prelude::*,
 };
 use leptos_router::components::A;
 use web_sys::ScrollIntoViewOptions;
+use crate::components::models::ingredient::DayIngredient;
+
 
 #[component]
-pub fn IngredientBox(ingredient: Ingredient) -> impl IntoView {
-    let box_classes = if ingredient.bought {
-        "inline-block px-3 py-1 m-1 rounded-full bg-green-200 text-green-900 border border-green-400 shadow-sm text-sm font-medium"
-    } else {
-        "inline-block px-3 py-1 m-1 rounded-full bg-red-100 text-red-900 border border-red-300 shadow-sm text-sm font-medium"
-    };
-
-    let label = if ingredient.amount > 1 {
-        format!("{} x{}", ingredient.name, ingredient.amount)
-    } else {
-        ingredient.name.clone()
-    };
-
-    view! { <span class=box_classes>{label}</span> }
-}
-
-#[component]
-pub fn DayPreview(day: DayWithMeal) -> impl IntoView {
+pub fn Day(day: DayWithMealAndIngredients) -> impl IntoView {
     let today = Local::now().date_naive();
     let node_ref = NodeRef::<Div>::new();
     let is_today = today == day.day.date;
@@ -59,7 +41,7 @@ pub fn DayPreview(day: DayWithMeal) -> impl IntoView {
         day.day.date.month()
     );
     match day.meal {
-        Some(meal) => Either::Left(view! {
+        Some((meal, ingredients)) => Either::Left(view! {
             <div id=format!("day-{}", day.day.id) class=card_classes node_ref=node_ref>
 
                 <A href=RouteUrl::EditDay {
@@ -83,7 +65,7 @@ pub fn DayPreview(day: DayWithMeal) -> impl IntoView {
                     </span>
                 </A>
 
-                {if let Some(recipie_url) = meal.meal.recipie_url {
+                {if let Some(recipie_url) = meal.recipie_url {
                     view! {
                         <a href=recipie_url target="_blank">
                             <span class="absolute top-2 right-2 z-10" title="View Recipe">
@@ -113,14 +95,14 @@ pub fn DayPreview(day: DayWithMeal) -> impl IntoView {
                 <div class="p-4 border-b border-gray-200 dark:border-gray-700">
                     <h4 class="text-lg font-semibold text-gray-900 dark:text-white">{header}</h4>
                     <h5 class="text-xl font-bold text-blue-700 dark:text-blue-400 font-underline">
-                        {meal.meal.name.clone()}
+                        {meal.name.clone()}
                     </h5>
                 </div>
                 // Image
                 <img
                     class="w-full h-48 object-cover rounded-b-none rounded-t-lg"
-                    src=meal.meal.image
-                    alt=meal.meal.name
+                    src=meal.image
+                    alt=meal.name
                 />
                 // Footer: Ingredients
                 <div class="p-4 border-t border-gray-200 dark:border-gray-700 mt-auto">
@@ -128,10 +110,9 @@ pub fn DayPreview(day: DayWithMeal) -> impl IntoView {
                         Ingredients
                     </h6>
                     <div class="flex flex-wrap gap-1">
-                        {meal
-                            .ingredients
+                        {ingredients
                             .into_iter()
-                            .map(|ingredient| view! { <IngredientBox ingredient=ingredient /> })
+                            .map(|ingredient| view! { <DayIngredient day_ingredient=ingredient /> })
                             .collect::<Vec<_>>()}
                     </div>
                 </div>

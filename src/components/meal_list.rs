@@ -1,47 +1,7 @@
+use crate::api::meal::get_all_meals_with_ingredients;
 use crate::app::RouteUrl;
-use crate::models::day::{Day, DayWithMeal};
-use crate::models::meal::MealWithIngredients;
 use leptos::prelude::*;
-use leptos::{either::Either, logging::log};
 use leptos_router::components::A;
-use leptos_router::hooks::{use_params, use_query};
-
-use crate::components::day_preview::*;
-
-use chrono::{Datelike, Local, NaiveDate, Weekday};
-
-use crate::components::week::{days_for_week, Week, WeekQuery};
-use leptos::Params;
-use leptos_router::params::Params;
-
-#[server]
-pub async fn get_all_meals_with_ingredients() -> Result<Vec<MealWithIngredients>, ServerFnError> {
-    use crate::db::*;
-    use crate::models::ingredient::*;
-    use crate::models::meal::*;
-    use crate::schema::ingredients;
-    use crate::schema::meals;
-    use diesel::prelude::*;
-
-    let db = &mut use_context::<Db>()
-        .ok_or(ServerFnError::new("Missing Db context"))?
-        .get()
-        .map_err(|_| ServerFnError::new("Failed to get Db connection"))?;
-    let mut meals_with_ingredients = vec![];
-    for meal in meals::table
-        .select(Meal::as_select())
-        .load::<Meal>(db)
-        .map_err(|e| ServerFnError::new(format!("Database error: {}", e)))?
-    {
-        meals_with_ingredients.push(MealWithIngredients {
-            meal: meal.clone(),
-            ingredients: ingredients::table
-                .filter(ingredients::meal_id.eq(meal.id))
-                .load::<Ingredient>(db)?,
-        });
-    }
-    Ok(meals_with_ingredients)
-}
 
 #[component]
 pub fn MealList() -> impl IntoView {
@@ -56,7 +16,8 @@ pub fn MealList() -> impl IntoView {
                             <div class="relative p-4 rounded-lg shadow bg-white dark:bg-gray-900">
                                 <A href=RouteUrl::EditMeal {
                                     id: meal.meal.id,
-                                }.redirect(RouteUrl::MealList.to_string())>
+                                }
+                                    .redirect(RouteUrl::MealList.to_string())>
                                     <span class="absolute top-2 left-2 z-10" title="Edit day">
                                         <svg
                                             xmlns="http://www.w3.org/2000/svg"
@@ -89,14 +50,7 @@ pub fn MealList() -> impl IntoView {
                                                 <li>
                                                     <button
                                                         type="button"
-                                                        class=format!(
-                                                            "px-3 py-2 rounded-full font-semibold transition {}",
-                                                            if ingredient.bought {
-                                                                "bg-green-500 text-white hover:bg-green-600"
-                                                            } else {
-                                                                "bg-red-500 text-white hover:bg-red-600"
-                                                            },
-                                                        )
+                                                        class="px-3 py-2 rounded-full font-semibold transition text-white bg-blue-500"
                                                     >
                                                         {ingredient.name.clone()}
                                                         <span class="ml-2 text-xs font-normal bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">
@@ -138,6 +92,17 @@ pub fn MealList() -> impl IntoView {
                 </svg>
 
             </button>
+        </A>
+        <A href=RouteUrl::NewMeal.to_string()>
+        <div class="flex justify-center mt-8">
+            <button
+                type="button"
+                class="w-16 h-16 rounded-full bg-green-500 text-white text-4xl flex items-center justify-center shadow-lg hover:bg-green-600 transition"
+                title="Add meal"
+            >
+                "+"
+            </button>
+        </div>
         </A>
         <Transition fallback=move || {
             view! { <p class="text-center text-gray-500 dark:text-gray-400">"Loading..."</p> }

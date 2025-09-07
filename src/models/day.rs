@@ -1,4 +1,7 @@
-use crate::models::meal::MealWithIngredients;
+use crate::models::{
+    days_ingredients::DayWithMealAndIngredients,
+    meal::{Meal, MealWithIngredients},
+};
 use chrono::NaiveDate;
 #[cfg(feature = "ssr")]
 use diesel::prelude::*;
@@ -20,7 +23,11 @@ pub struct DayForm {
     pub year: i32,
 }
 
-#[cfg_attr(feature = "ssr", derive(Queryable, Selectable))]
+#[cfg_attr(
+    feature = "ssr",
+    derive(Queryable, Selectable, Identifiable, Associations)
+)]
+#[cfg_attr(feature = "ssr", diesel(belongs_to(Meal)))]
 #[cfg_attr(feature = "ssr", diesel(table_name = crate::schema::days))]
 #[cfg_attr(feature = "ssr", diesel(check_for_backend(diesel::sqlite::Sqlite)))]
 #[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]

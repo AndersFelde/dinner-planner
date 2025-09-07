@@ -3,7 +3,7 @@ use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
     components::{Route, Router, Routes, ToHref}, path, AsPath, ParamSegment, PossibleRouteMatch, StaticSegment
 };
-use crate::components::{day_form::*, meal_form::*, meal_list::MealList, shopping_list::ShoppingList, week::*};
+use crate::components::{forms::day_form::*, forms::meal_form::*, meal_list::MealList, shopping_list::ShoppingList, week::*};
 
 // <Route path=path!("/") view=Week />
 // <Route path=path!("/new/meal") view=MealForm />

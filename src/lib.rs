@@ -1,6 +1,7 @@
 pub mod app;
 mod components;
 mod models;
+pub mod api;
 
 #[cfg(feature = "ssr")]
 pub mod schema;

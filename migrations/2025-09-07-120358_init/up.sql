@@ -3,22 +3,29 @@ CREATE TABLE ingredients (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     name VARCHAR NOT NULL,
     amount INTEGER NOT NULL,
-    bought BOOLEAN NOT NULL,
-    meal_id INTEGER REFERENCES meals(id) ON DELETE CASCADE
+    meal_id INTEGER NOT NULL REFERENCES meals(id) ON DELETE CASCADE
 );
 
 -- Meal table
 CREATE TABLE meals (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     name VARCHAR NOT NULL,
-    image VARCHAR
+    image VARCHAR NOT NULL,
+    recipie_url VARCHAR
 );
 
 -- Day table
 CREATE TABLE days (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    date DATE NOT NULL,
+    date DATE NOT NULL UNIQUE,
     meal_id INTEGER REFERENCES meals(id) ON DELETE SET NULL,
     week INTEGER NOT NULL,
     year INTEGER NOT NULL
+);
+
+CREATE TABLE days_ingredients (
+    day_id INTEGER NOT NULL REFERENCES days(id) ON DELETE CASCADE,
+    ingredient_id INTEGER NOT NULL REFERENCES ingredients(id) ON DELETE CASCADE,
+    bought BOOLEAN NOT NULL DEFAULT 0,
+    PRIMARY KEY(day_id, ingredient_id)
 );

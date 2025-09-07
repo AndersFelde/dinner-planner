@@ -1,64 +1,12 @@
+use crate::api::day::{get_day, upsert_day};
+use crate::api::meal::get_meals;
 use crate::app::RouteUrl;
-use crate::models::day::{Day, DayForm};
-use crate::models::meal::Meal;
-use chrono::{Datelike, Local, NaiveDate};
-use leptos::logging::log;
+use chrono::{Datelike, NaiveDate};
 use leptos::prelude::*;
 use leptos_router::components::A;
 use leptos_router::hooks::{use_location, use_navigate, use_params_map};
+use crate::models::day::DayForm;
 
-#[server]
-pub async fn create_day_with_meal(day_form: DayForm) -> Result<usize, ServerFnError> {
-    use crate::db::*;
-    use crate::schema::days;
-    use diesel::dsl::insert_into;
-    use diesel::prelude::*;
-
-    let db = &mut use_context::<Db>()
-        .ok_or(ServerFnError::new("Missing Db context"))?
-        .get()
-        .map_err(|_| ServerFnError::new("Failed to get Db connection"))?;
-    insert_into(days::table)
-        .values(&day_form)
-        .on_conflict(days::date)
-        .do_update()
-        .set(&day_form)
-        .execute(db)
-        .map_err(|e| ServerFnError::new(format!("Database error: {}", e)))
-}
-
-#[server]
-pub async fn get_all_meals() -> Result<Vec<Meal>, ServerFnError> {
-    use crate::db::*;
-    use crate::models::meal::*;
-    use crate::schema::meals;
-    use diesel::prelude::*;
-
-    let db = &mut use_context::<Db>()
-        .ok_or(ServerFnError::new("Missing Db context"))?
-        .get()
-        .map_err(|_| ServerFnError::new("Failed to get Db connection"))?;
-    meals::table
-        .select(Meal::as_select())
-        .load(db)
-        .map_err(|e| ServerFnError::new(format!("Database error: {}", e)))
-}
-#[server]
-pub async fn get_day(id: i32) -> Result<Day, ServerFnError> {
-    use crate::db::*;
-    use crate::models::day::*;
-    use crate::schema::days;
-    use diesel::prelude::*;
-
-    let db = &mut use_context::<Db>()
-        .ok_or(ServerFnError::new("Missing Db context"))?
-        .get()
-        .map_err(|_| ServerFnError::new("Failed to get Db connection"))?;
-    days::table
-        .filter(days::id.eq(id))
-        .first::<Day>(db)
-        .map_err(|e| ServerFnError::new(format!("Database error: {}", e)))
-}
 // TODO: if date allready exists, edit
 #[component]
 pub fn DayForm() -> impl IntoView {
@@ -82,7 +30,7 @@ pub fn DayForm() -> impl IntoView {
         },
     );
 
-    let meals_resource = OnceResource::new(get_all_meals());
+    let meals_resource = OnceResource::new(get_meals());
 
     // Effect to redirect after success
 
@@ -126,7 +74,7 @@ pub fn DayForm() -> impl IntoView {
     };
     let add_day_action = Action::new(|day_form: &DayForm| {
         let day_form = day_form.clone();
-        async move { create_day_with_meal(day_form).await }
+        async move { upsert_day(day_form).await }
     });
 
     let on_submit = move |ev: leptos::ev::SubmitEvent| {

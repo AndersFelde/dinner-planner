@@ -7,6 +7,9 @@ pub mod schema;
 pub mod db;
 
 #[cfg(feature = "ssr")]
+pub mod api;
+
+#[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() {
     use axum::Router;

@@ -2,3 +2,4 @@
 DROP TABLE IF EXISTS ingredients;
 DROP TABLE IF EXISTS days;
 DROP TABLE IF EXISTS meals;
+DROP TABLE IF EXISTS days_ingredients;
