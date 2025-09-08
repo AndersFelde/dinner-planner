@@ -33,3 +33,17 @@ pub async fn insert_day_ingredient(
         "Could not update day_ingredient {day_ingredient:?}"
     )
 }
+
+#[server]
+pub async fn delete_day_ingredient_for_day(
+    day_id: i32
+) -> Result<usize, ServerFnError> {
+    use crate::api::ssr::*;
+    let db = &mut get_db()?;
+    server_err!(
+        delete(days_ingredients::table)
+            .filter(days_ingredients::day_id.eq(day_id))
+            .execute(db),
+        "Could not delete day_ingredients for {day_id}"
+    )
+}

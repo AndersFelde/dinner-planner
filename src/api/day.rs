@@ -1,3 +1,4 @@
+use crate::api::days_ingredients::delete_day_ingredient_for_day;
 use crate::api::meal::get_meal;
 use crate::models::day::{Day, DayForm, DayWithMeal};
 use crate::models::meal::{Meal, MealWithIngredients};
@@ -31,6 +32,7 @@ pub async fn upsert_day(day_form: DayForm) -> Result<(), ServerFnError> {
         "Could not create day with {day_form:?}"
     )?
     .id;
+    delete_day_ingredient_for_day(day_id).await?;
     if let Some(meal_id) = day_form.meal_id {
         for ingredient in get_ingredients_for_meal(db, meal_id)? {
             insert_day_ingredient(DayIngredient {
