@@ -30,6 +30,17 @@ pub async fn get_meal(id: i32) -> Result<MealWithIngredients, ServerFnError> {
     )?;
     Ok(MealWithIngredients { meal, ingredients })
 }
+
+#[server]
+pub async fn delete_meal(id: i32) -> Result<usize, ServerFnError> {
+    use crate::api::ssr::*;
+    let db = &mut get_db()?;
+    server_err!(
+        delete(meals::table).filter(meals::id.eq(id)).execute(db),
+        "Could not get meal with id {id}"
+    )
+}
+
 #[server]
 pub async fn update_meal_with_ingredients(
     meal: Meal,
