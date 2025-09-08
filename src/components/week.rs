@@ -1,9 +1,12 @@
-use crate::{api::week::{days_for_week, Week}, app::RouteUrl};
+use crate::components::error_list;
 use crate::components::models::day::Day;
+use crate::{
+    api::week::{days_for_week, Week},
+    app::RouteUrl,
+};
 use leptos::logging::log;
 use leptos::prelude::*;
 use leptos_router::{components::A, hooks::use_query};
-
 
 use leptos::Params;
 use leptos_router::params::Params;
@@ -25,12 +28,13 @@ pub fn Week() -> impl IntoView {
     let days_resource = Resource::new(move || week.get(), |week| days_for_week(week));
     let days_data = move || {
         days_resource.get().map(|val| {
-            val.unwrap()
-                .iter()
-                .map(|day| {
-                    view! { <Day day=day.clone() /> }
-                })
-                .collect::<Vec<_>>()
+            val.map(|days| {
+                days.iter()
+                    .map(|day| {
+                        view! { <Day day=day.clone() /> }
+                    })
+                    .collect::<Vec<_>>()
+            })
         })
     };
 
@@ -134,7 +138,9 @@ pub fn Week() -> impl IntoView {
             <div class="flex flex-col gap-4 py-2 items-center">
                 <Transition fallback=move || {
                     view! { <p>"Loading..."</p> }
-                }>{move || days_data}</Transition>
+                }>
+                    <ErrorBoundary fallback=error_list>{move || days_data}</ErrorBoundary>
+                </Transition>
 
             </div>
         </div>

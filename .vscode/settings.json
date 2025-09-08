@@ -17,6 +17,7 @@
     "conventionalCommits.scopes": [
         "docker",
         "main",
-        "api"
+        "api",
+        "componets"
     ]
 }

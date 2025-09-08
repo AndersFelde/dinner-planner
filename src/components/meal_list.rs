@@ -1,5 +1,6 @@
 use crate::api::meal::get_all_meals_with_ingredients;
 use crate::app::RouteUrl;
+use crate::components::error_list;
 use crate::components::models::meal::Meal;
 use leptos::prelude::*;
 use leptos_router::components::A;
@@ -9,19 +10,22 @@ pub fn MealList() -> impl IntoView {
     let meals_resource = OnceResource::new(get_all_meals_with_ingredients());
     let meals_data = move || {
         meals_resource.get().map(|val| {
-            val.unwrap()
-                .iter()
-                .map(|meal| {
-                    view! {
-                        <li class="mb-6">
-                            <Meal meal=meal.clone() />
+            val.map(|meals| {
+                meals
+                    .iter()
+                    .map(|meal| {
+                        view! {
+                            <li class="mb-6">
+                                <Meal meal=meal.clone() />
 
-                        </li>
-                    }
-                })
-                .collect::<Vec<_>>()
+                            </li>
+                        }
+                    })
+                    .collect::<Vec<_>>()
+            })
         })
     };
+
     view! {
         <A href=RouteUrl::Home.to_string()>
             <button
@@ -60,7 +64,9 @@ pub fn MealList() -> impl IntoView {
         <Transition fallback=move || {
             view! { <p class="text-center text-gray-500 dark:text-gray-400">"Loading..."</p> }
         }>
-            <ul class="max-w-2xl mx-auto mt-8">{move || meals_data()}</ul>
+            <ErrorBoundary fallback=error_list>
+                <ul class="max-w-2xl mx-auto mt-8">{move || meals_data()}</ul>
+            </ErrorBoundary>
         </Transition>
     }
 }

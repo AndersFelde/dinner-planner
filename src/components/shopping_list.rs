@@ -1,24 +1,39 @@
 use crate::api::week::{days_for_week, Week};
 use crate::app::RouteUrl;
+use crate::components::error_list;
 use chrono::Datelike;
 use leptos::prelude::*;
 use leptos::{either::Either, logging::log};
 use leptos_router::components::A;
 use leptos_router::hooks::use_params;
 
-use crate::components::week::WeekQuery;
 use crate::components::models::ingredient::DayIngredient;
+use crate::components::week::WeekQuery;
 
 #[component]
 pub fn ShoppingList() -> impl IntoView {
     let query = use_params::<WeekQuery>();
-    let days_resource = Resource::new(
-        move || query.read().as_ref().ok().cloned().unwrap(),
-        |query| {
-            days_for_week(Week {
+    let (week, set_week) = signal(Week::current());
+    Effect::new(move || {
+        if let Ok(query) = query.read().as_ref() {
+            set_week(Week {
                 week: query.week,
                 year: query.year,
-            })
+            });
+        }
+    });
+    let days_resource = Resource::new(
+        move || query.read().as_ref().ok().cloned(),
+        |query| async move {
+            if let Some(query) = query {
+                days_for_week(Week {
+                    week: query.week,
+                    year: query.year,
+                })
+                .await
+            } else {
+                Err(ServerFnError::new("Could not get WeekQuery"))
+            }
         },
     );
 
@@ -26,8 +41,8 @@ pub fn ShoppingList() -> impl IntoView {
 
     let days_data = move || {
         days_resource.get().map(|val| {
-            val.unwrap()
-                .iter()
+            val.map(|days|{
+                days.iter()
                 .map(|day| {
                     let header = format!(
                         "{} - {:02}.{:02}",
@@ -48,38 +63,9 @@ pub fn ShoppingList() -> impl IntoView {
                                     {ingredients
                                         .iter()
                                         .map(|ingredient| {
-                                            // let id = (ingredient.day_id, ingredient.ingredient.id.clone());
-                                            // let bought = bought_map
-                                            //     .get()
-                                            //     .get(&id)
-                                            //     .copied()
-                                            //     .unwrap_or(ingredient.bought);
                                             view! {
                                                 <li>
-                                                    <DayIngredient day_ingredient= ingredient.clone()/>
-                                                    // <button
-                                                    //     type="button"
-                                                    //     class=format!(
-                                                    //         "px-3 py-2 rounded-full font-semibold transition {}",
-                                                    //         if bought {
-                                                    //             "bg-green-500 text-white hover:bg-green-600"
-                                                    //         } else {
-                                                    //             "bg-red-500 text-white hover:bg-red-600"
-                                                    //         },
-                                                    //     )
-                                                    //     on:click=move |_| {
-                                                    //         set_bought_map
-                                                    //             .update(|map| {
-                                                    //                 map.insert(id.clone(), !bought);
-                                                    //                 update_ingredient_action.dispatch((id, !bought));
-                                                    //             });
-                                                    //     }
-                                                    // >
-                                                    //     {ingredient.ingredient.name.clone()}
-                                                    //     <span class="ml-2 text-xs font-normal bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">
-                                                    //         {ingredient.ingredient.amount}
-                                                    //     </span>
-                                                    // </button>
+                                                    <DayIngredient day_ingredient=ingredient.clone() />
                                                 </li>
                                             }
                                         })
@@ -100,13 +86,14 @@ pub fn ShoppingList() -> impl IntoView {
                     }
                 })
                 .collect::<Vec<_>>()
+            })
         })
     };
 
     view! {
         <A href=move || {
-            let query = query.read().as_ref().ok().cloned().unwrap();
-            format!("{}?week={}&year={}", RouteUrl::Home.to_string(), query.week, query.year)
+            let week = week.get();
+            format!("{}?week={}&year={}", RouteUrl::Home.to_string(), week.week, week.year)
         }>
             <button
                 type="button"
@@ -131,18 +118,16 @@ pub fn ShoppingList() -> impl IntoView {
         </A>
         <div class="flex justify-center items-center gap-4 mb-2 sticky top-0 z-10 bg-white dark:bg-gray-800 py-2 shadow">
             <span class="font-bold text-base text-gray-900 dark:text-white">
-                {move || {
-                    format!(
-                        "Shopping list - Week {}",
-                        query.read().as_ref().ok().cloned().unwrap().week,
-                    )
-                }}
+                {move || { format!("Shopping list - Week {}", week.get().week) }}
             </span>
         </div>
         <div class="max-w-2xl mx-8 mt-8">
             <Transition fallback=move || {
+
                 view! { <p class="text-center text-gray-500 dark:text-gray-400">"Loading..."</p> }
-            }>{move || days_data()}</Transition>
+            }>
+                <ErrorBoundary fallback=error_list>{move || days_data()}</ErrorBoundary>
+            </Transition>
         </div>
     }
 }

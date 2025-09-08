@@ -1,11 +1,12 @@
 use crate::api::day::{get_day, upsert_day};
 use crate::api::meal::get_meals;
 use crate::app::RouteUrl;
+use crate::components::error_list;
+use crate::models::day::DayForm;
 use chrono::{Datelike, NaiveDate};
 use leptos::prelude::*;
 use leptos_router::components::A;
 use leptos_router::hooks::{use_location, use_navigate, use_params_map};
-use crate::models::day::DayForm;
 
 // TODO: if date allready exists, edit
 #[component]
@@ -56,8 +57,9 @@ pub fn DayForm() -> impl IntoView {
     });
     let meals_data = move || {
         if let Some(Ok(Some(day))) = day_resource.get() {
-            meals_resource.get().map(|val| {
-                val.unwrap()
+            meals_resource.get().map(|meals| {
+                meals.map(|meals| {
+                    meals
                 .iter()
                 .map(|meal| {
                     view! {
@@ -67,6 +69,7 @@ pub fn DayForm() -> impl IntoView {
                     }
                 })
                 .collect::<Vec<_>>()
+                })
             })
         } else {
             None
@@ -79,15 +82,16 @@ pub fn DayForm() -> impl IntoView {
 
     let on_submit = move |ev: leptos::ev::SubmitEvent| {
         ev.prevent_default();
-        let date = NaiveDate::parse_from_str(&date.get(), "%d-%m-%Y").unwrap();
-        let meal_id = meal_id.get();
-        let day_form = DayForm {
-            date,
-            meal_id: Some(meal_id),
-            week: date.iso_week().week() as i32,
-            year: date.year(),
-        };
-        add_day_action.dispatch(day_form);
+        if let Ok(date) = NaiveDate::parse_from_str(&date.get(), "%d-%m-%Y") {
+            let meal_id = meal_id.get();
+            let day_form = DayForm {
+                date,
+                meal_id: Some(meal_id),
+                week: date.iso_week().week() as i32,
+                year: date.year(),
+            };
+            add_day_action.dispatch(day_form);
+        }
     };
 
     Effect::new(move || {
@@ -138,13 +142,17 @@ pub fn DayForm() -> impl IntoView {
                     </label>
                     <select
                         prop:value=meal_id
-                        on:change=move |ev| set_meal_id(event_target_value(&ev).parse().unwrap())
+                        on:change=move |ev| {
+                            event_target_value(&ev).parse().map(|id| set_meal_id(id));
+                        }
                         class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-gray-800 dark:text-white"
                         required
                     >
                         <Transition fallback=move || {
                             view! { <span>"Loading..."</span> }
-                        }>{move || meals_data}</Transition>
+                        }>
+                            <ErrorBoundary fallback=error_list>{move || meals_data}</ErrorBoundary>
+                        </Transition>
                     </select>
                 </div>
 
