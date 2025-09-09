@@ -9,11 +9,6 @@ pub fn DayIngredient(day_ingredient: IngredientWithBought) -> impl IntoView {
     let ingredient = day_ingredient.ingredient;
     let (bought, set_bought) = signal(day_ingredient.bought);
 
-    let label = if ingredient.amount > 1 {
-        format!("{} x{}", ingredient.name, ingredient.amount)
-    } else {
-        ingredient.name.clone()
-    };
     let day_id = day_ingredient.day_id;
     let ingredient_id = ingredient.id;
     let update_ingredient_action = Action::new(move |bought: &bool| {
@@ -43,7 +38,15 @@ pub fn DayIngredient(day_ingredient: IngredientWithBought) -> impl IntoView {
             }
             on:click=on_click
         >
-            {label}
+            {ingredient.name.clone()}
+                <Show
+                when= move || {ingredient.amount > 1}
+                fallback = || view!{}>
+                        <span class="ml-2 text-xs font-normal text-gray-800 bg-gray-200 dark:bg-gray-700 dark:text-gray-100 px-2 py-1 rounded">
+                            {ingredient.amount.clone()}
+                        </span>
+                </Show>
+
         </span>
     }
 }

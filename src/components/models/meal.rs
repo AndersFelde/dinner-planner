@@ -12,12 +12,12 @@ pub fn Meal(meal: MealWithIngredients) -> impl IntoView {
     });
     view! {
         <Show when=move || !deleted.get() fallback=|| view! {}>
-            <div class="relative p-4 rounded-lg shadow bg-white dark:bg-gray-900">
+            <div class="relative w-80 max-w-sm bg-white border border-gray-200 rounded-xl shadow-sm dark:bg-gray-800 dark:border-gray-700 flex flex-col transition-all duration-300">
+
                 <A href=RouteUrl::EditMeal {
                     id: meal.meal.id,
-                }
-                    .redirect(RouteUrl::MealList.to_string())>
-                    <span class="absolute top-2 left-2 z-10" title="Edit day">
+                }>
+                    <span class="absolute top-2 left-2 z-10" title="Edit meal">
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             fill="none"
@@ -57,31 +57,44 @@ pub fn Meal(meal: MealWithIngredients) -> impl IntoView {
                         />
                     </svg>
                 </span>
-                <h2 class="text-lg font-bold text-gray-800 dark:text-gray-100 mb-2">
-                    {meal.meal.name.clone()}
-                </h2>
-                <div class="mb-2 text-gray-700 dark:text-gray-200 font-semibold">Ingredients:</div>
-                <ul class="flex flex-wrap items-center justify-center gap-2">
-                    {meal
-                        .ingredients
-                        .iter()
-                        .map(|ingredient| {
-                            view! {
-                                <li>
+
+                // Header
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                    <h5 class="text-xl font-bold text-blue-700 dark:text-blue-400 font-underline">
+                        {meal.meal.name.clone()}
+                    </h5>
+                </div>
+                // Image
+                <img
+                    class="w-full h-48 object-cover rounded-b-none rounded-t-lg"
+                    src=meal.meal.image.clone()
+                    alt=meal.meal.name.clone()
+                />
+                // Footer: Ingredients
+                <div class="p-4 border-t border-gray-200 dark:border-gray-700 mt-auto">
+                    <h6 class="text-md font-semibold text-gray-900 dark:text-white mb-2">
+                        Ingredients
+                    </h6>
+                    <div class="flex flex-wrap gap-1">
+                        {meal
+                            .ingredients.clone()
+                            .into_iter()
+                            .map(|ingredient| {
+                                view! {
                                     <button
                                         type="button"
                                         class="px-3 py-2 rounded-full font-semibold transition text-white bg-blue-500"
                                     >
                                         {ingredient.name.clone()}
-                                        <span class="ml-2 text-xs font-normal bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">
+                                        <span class="ml-2 text-xs font-normal text-gray-800 bg-gray-200 dark:bg-gray-700 dark:text-gray-100 px-2 py-1 rounded">
                                             {ingredient.amount}
                                         </span>
                                     </button>
-                                </li>
-                            }
-                        })
-                        .collect::<Vec<_>>()}
-                </ul>
+                                }
+                            })
+                            .collect::<Vec<_>>()}
+                    </div>
+                </div>
             </div>
         </Show>
     }

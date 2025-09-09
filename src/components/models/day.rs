@@ -132,7 +132,7 @@ pub fn Day(day: DayWithMealAndIngredients) -> impl IntoView {
                     // Image area with big "+" button
                     <div class="w-full h-48 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-b-none rounded-t-lg">
                         <button
-                            class="text-6xl text-gray-400 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-colors bg-white dark:bg-gray-900 rounded-full w-20 h-20 flex items-center justify-center shadow-lg border-2 border-gray-300 dark:border-gray-700"
+                            class="text-6xl text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-colors bg-white dark:bg-gray-900 rounded-full w-20 h-20 flex items-center justify-center shadow-lg border-2 border-gray-300 dark:border-gray-700"
                             title="Add meal"
                         >
                             "+"

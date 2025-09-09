@@ -14,12 +14,7 @@ pub fn MealList() -> impl IntoView {
                 meals
                     .iter()
                     .map(|meal| {
-                        view! {
-                            <li class="mb-6 w-100">
-                                <Meal meal=meal.clone() />
-
-                            </li>
-                        }
+                        view! { <Meal meal=meal.clone() /> }
                     })
                     .collect::<Vec<_>>()
             })
@@ -51,22 +46,35 @@ pub fn MealList() -> impl IntoView {
             </button>
         </A>
         <A href=RouteUrl::NewMeal.to_string()>
-            <div class="flex justify-center mt-8">
-                <button
-                    type="button"
-                    class="w-16 h-16 rounded-full bg-green-500 text-white text-4xl flex items-center justify-center shadow-lg hover:bg-green-600 transition"
-                    title="Add meal"
+            <button
+                type="button"
+                class="fixed bottom-19 right-4 z-50 px-4 py-3 rounded-full bg-blue-500 text-white font-semibold text-base shadow-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400 transition flex items-center justify-center whitespace-nowrap"
+                title="Add meal"
+            >
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="1.5"
+                    stroke="currentColor"
+                    class="size-6"
                 >
-                    "+"
-                </button>
-            </div>
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M12 4.5v15m7.5-7.5h-15"
+                    />
+                </svg>
+
+            </button>
         </A>
+
         <Transition fallback=move || {
             view! { <p class="text-center text-gray-400 dark:text-gray-800">"Loading..."</p> }
         }>
             <ErrorBoundary fallback=error_list>
-                <div>
-                <ul class="max-w-2xl mx-auto mt-8 flex flex-col items-center">{move || meals_data()}</ul>
+                <div class="flex flex-col gap-4 py-2 items-center justify-center">
+                    {move || meals_data()}
                 </div>
             </ErrorBoundary>
         </Transition>
