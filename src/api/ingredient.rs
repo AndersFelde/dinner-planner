@@ -8,12 +8,12 @@ use crate::models::ingredient::IngredientForm;
 pub fn insert_ingredient(
     db: &mut crate::api::ssr::DbConn,
     ingredient_form: IngredientForm,
-) -> Result<usize, ServerFnError> {
+) -> Result<Ingredient, ServerFnError> {
     use crate::api::ssr::*;
     server_err!(
         insert_into(ingredients::table)
             .values(&ingredient_form)
-            .execute(db),
+            .get_result(db),
         "Could not insert ingredient {:?}",
         ingredient_form
     )

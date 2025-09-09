@@ -22,14 +22,13 @@ pub fn UpdateMealForm() -> impl IntoView {
         move |id| async move {
             match id {
                 Some(id) => get_meal(id).await.map(Some),
-                None => Ok(None),
+                None => Err(ServerFnError::new("No valid id provided")),
             }
         },
     );
     let add_meal_action = Action::new(|input: &(Meal, Vec<IngredientForm>)| {
         let meal = input.0.clone();
         let ingredients = input.1.clone();
-        log!("Ingredients: {ingredients:?}");
         async move { update_meal_with_ingredients(meal, ingredients).await }
     });
     let query = use_query_map();
@@ -68,14 +67,15 @@ pub fn UpdateMealForm() -> impl IntoView {
                     view! { <MealForm meal=Some(meal) on_submit=on_submit /> }
                 })
             })
-        });
+        })
     };
     view! {
-        <Suspense fallback=move || {
+        <Transition fallback=move || {
             view! { <span>"Loading..."</span> }
         }>
             <ErrorBoundary fallback=error_list>{meal_form}</ErrorBoundary>
-        </Suspense>
+        //
+        </Transition>
     }
     // if let Some(Ok(meal)) = meal_resource.get() {
 }
@@ -256,7 +256,7 @@ where
                             .map(|(idx, ing)| {
                                 // ...existing code...
                                 view! {
-                                    <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border mb-2 flex flex-nowrap gap-2 items-center">
+                                    <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border mb-2 flex flex-nowrap gap-2 items-center justify-center">
                                         // Ingredient name input
                                         // <Show
                                         // when=move || { ingredients.get().len() > 1 }
@@ -301,7 +301,7 @@ where
                                                 set_ingredients
                                                     .update(|ings| ings[idx].name = ev.target().value())
                                             }
-                                            class="px-3 py-2 w-40 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-gray-700 dark:text-white"
+                                            class="px-3 py-2 flex-1 min-w-0 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-gray-700 dark:text-white"
                                             required
                                         />
                                         // Amount display and buttons

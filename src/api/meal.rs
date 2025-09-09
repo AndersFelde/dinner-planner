@@ -47,6 +47,8 @@ pub async fn update_meal_with_ingredients(
     ingredient_forms: Vec<IngredientForm>,
 ) -> Result<(), ServerFnError> {
     use crate::api::ingredient::{delete_ingredients, insert_ingredient};
+    use crate::api::days_ingredients::insert_day_ingredient;
+    use crate::api::day::get_days_for_meal;
     use crate::api::ssr::*;
     let db = &mut get_db()?;
     server_err!(
@@ -55,9 +57,17 @@ pub async fn update_meal_with_ingredients(
     )?;
     // This is kinda hacky, but easy
     delete_ingredients(db, meal.id)?;
+    let meal_days = get_days_for_meal(meal.id).await?;
     for mut ingredient_form in ingredient_forms {
         ingredient_form.meal_id = Some(meal.id);
-        insert_ingredient(db, ingredient_form)?;
+        let ingredient = insert_ingredient(db, ingredient_form)?;
+        for day in meal_days.iter() {
+            insert_day_ingredient(DayIngredient {
+                day_id: day.id,
+                ingredient_id: ingredient.id,
+                bought: false,
+            }).await?;
+        }
     }
     Ok(())
 }

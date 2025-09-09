@@ -15,7 +15,7 @@ pub fn MealList() -> impl IntoView {
                     .iter()
                     .map(|meal| {
                         view! {
-                            <li class="mb-6">
+                            <li class="mb-6 w-100">
                                 <Meal meal=meal.clone() />
 
                             </li>
@@ -62,10 +62,12 @@ pub fn MealList() -> impl IntoView {
             </div>
         </A>
         <Transition fallback=move || {
-            view! { <p class="text-center text-gray-500 dark:text-gray-400">"Loading..."</p> }
+            view! { <p class="text-center text-gray-400 dark:text-gray-800">"Loading..."</p> }
         }>
             <ErrorBoundary fallback=error_list>
-                <ul class="max-w-2xl mx-auto mt-8">{move || meals_data()}</ul>
+                <div>
+                <ul class="max-w-2xl mx-auto mt-8 flex flex-col items-center">{move || meals_data()}</ul>
+                </div>
             </ErrorBoundary>
         </Transition>
     }

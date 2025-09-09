@@ -15,6 +15,15 @@ pub async fn get_day(id: i32) -> Result<Day, ServerFnError> {
         "Could not get day {id}"
     )
 }
+#[cfg(feature = "ssr")]
+pub async fn get_days_for_meal(meal_id: i32) -> Result<Vec<Day>, ServerFnError> {
+    use crate::api::ssr::*;
+    let db = &mut get_db()?;
+    server_err!(
+        days::table.filter(days::meal_id.eq(meal_id)).load(db),
+        "Could not get day meal {meal_id}"
+    )
+}
 
 #[server]
 pub async fn upsert_day(day_form: DayForm) -> Result<(), ServerFnError> {
