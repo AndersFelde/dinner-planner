@@ -1,8 +1,9 @@
-use crate::models::day::{DayForm};
-use crate::models::days_ingredients::{DayWithMealAndIngredients, IngredientWithBought};
+#[cfg(feature = "ssr")]
+use crate::models::{day::DayForm, days_ingredients::IngredientWithBought};
+
+use crate::models::days_ingredients::DayWithMealAndIngredients;
 use chrono::{Datelike, Local, NaiveDate, Weekday};
 use leptos::prelude::*;
-use leptos::logging::log;
 
 #[derive(serde::Deserialize, serde::Serialize, Clone, Debug, PartialEq)]
 pub struct Week {
@@ -132,14 +133,15 @@ pub async fn days_for_week(week: Week) -> Result<[DayWithMealAndIngredients; 7],
                 bought: di.bought,
             })
             .collect();
-            days.push(
-                DayWithMealAndIngredients {
-                    day: day,
-                    meal: Some((meal, ingredients)),
-                },
-            );
+            days.push(DayWithMealAndIngredients {
+                day: day,
+                meal: Some((meal, ingredients)),
+            });
         } else {
-            days.push(DayWithMealAndIngredients { day: day, meal: None })
+            days.push(DayWithMealAndIngredients {
+                day: day,
+                meal: None,
+            })
         }
     }
     Ok(days

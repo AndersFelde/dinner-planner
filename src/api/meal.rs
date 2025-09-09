@@ -1,6 +1,5 @@
 use crate::models::ingredient::IngredientForm;
 use crate::models::meal::{Meal, MealForm, MealWithIngredients};
-use leptos::logging::log;
 use leptos::prelude::*;
 
 #[server]

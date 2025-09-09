@@ -1,8 +1,8 @@
 #[cfg(feature = "ssr")]
 use leptos::prelude::ServerFnError;
-use crate::models::ingredient::Ingredient;
 
-use crate::models::ingredient::IngredientForm;
+#[cfg(feature = "ssr")]
+use crate::models::ingredient::{IngredientForm, Ingredient};
 
 #[cfg(feature = "ssr")]
 pub fn insert_ingredient(

@@ -1,10 +1,5 @@
-use crate::api::days_ingredients::delete_day_ingredient_for_day;
-use crate::api::meal::get_meal;
-use crate::models::day::{Day, DayForm, DayWithMeal};
-use crate::models::meal::{Meal, MealWithIngredients};
-use chrono::{Datelike, Local, NaiveDate, Weekday};
+use crate::models::day::{Day, DayForm};
 use leptos::prelude::*;
-use leptos::logging::log;
 
 #[server]
 pub async fn get_day(id: i32) -> Result<Day, ServerFnError> {
@@ -27,7 +22,7 @@ pub async fn get_days_for_meal(meal_id: i32) -> Result<Vec<Day>, ServerFnError> 
 
 #[server]
 pub async fn upsert_day(day_form: DayForm) -> Result<(), ServerFnError> {
-    use crate::api::days_ingredients::insert_day_ingredient;
+    use crate::api::days_ingredients::{insert_day_ingredient, delete_day_ingredient_for_day};
     use crate::api::ingredient::get_ingredients_for_meal;
     use crate::api::ssr::*;
     let db = &mut get_db()?;

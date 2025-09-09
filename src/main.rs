@@ -14,7 +14,7 @@ pub mod api;
 async fn main() {
     use axum::Router;
     use diesel::prelude::*;
-    use dinner_planner::{api::ssr::get_db, app::*};
+    use dinner_planner::app::*;
     use leptos::logging::{error, log};
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};

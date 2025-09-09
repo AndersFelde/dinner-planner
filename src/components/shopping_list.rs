@@ -3,7 +3,7 @@ use crate::app::RouteUrl;
 use crate::components::error_list;
 use chrono::Datelike;
 use leptos::prelude::*;
-use leptos::{either::Either, logging::log};
+use leptos::either::Either;
 use leptos_router::components::A;
 use leptos_router::hooks::use_params;
 

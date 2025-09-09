@@ -1,5 +1,5 @@
 use crate::models::{
-    day::{Day, DayWithMeal},
+    day::Day,
     ingredient::Ingredient,
     meal::Meal,
 };

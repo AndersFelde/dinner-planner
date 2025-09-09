@@ -143,7 +143,7 @@ pub fn DayForm() -> impl IntoView {
                     <select
                         prop:value=meal_id
                         on:change=move |ev| {
-                            event_target_value(&ev).parse().map(|id| set_meal_id(id));
+                            let _ = event_target_value(&ev).parse().map(|id| set_meal_id(id));
                         }
                         class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-gray-800 dark:text-white"
                         required

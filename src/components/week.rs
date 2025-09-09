@@ -4,7 +4,6 @@ use crate::{
     api::week::{days_for_week, Week},
     app::RouteUrl,
 };
-use leptos::logging::log;
 use leptos::prelude::*;
 use leptos_router::{components::A, hooks::use_query};
 

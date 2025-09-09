@@ -1,4 +1,4 @@
-use crate::models::ingredient::{Ingredient, IngredientForm};
+use crate::models::ingredient::Ingredient;
 #[cfg(feature = "ssr")]
 use diesel::prelude::*;
 
