@@ -18,6 +18,7 @@
         "docker",
         "main",
         "api",
-        "componets"
+        "componets",
+        "styling"
     ]
 }

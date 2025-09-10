@@ -1,15 +1,10 @@
 use crate::app::RouteUrl;
+use crate::components::models::ingredient::DayIngredient;
 use crate::models::days_ingredients::DayWithMealAndIngredients;
 use chrono::{Datelike, Local};
-use leptos::{
-    either::Either,
-    html::Div,
-    prelude::*,
-};
+use leptos::{either::Either, html::Div, prelude::*};
 use leptos_router::components::A;
 use web_sys::ScrollIntoViewOptions;
-use crate::components::models::ingredient::DayIngredient;
-
 
 #[component]
 pub fn Day(day: DayWithMealAndIngredients) -> impl IntoView {
@@ -135,7 +130,20 @@ pub fn Day(day: DayWithMealAndIngredients) -> impl IntoView {
                             class="text-6xl text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-colors bg-white dark:bg-gray-900 rounded-full w-20 h-20 flex items-center justify-center shadow-lg border-2 border-gray-300 dark:border-gray-700"
                             title="Add meal"
                         >
-                            "+"
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke-width="1.5"
+                                stroke="currentColor"
+                                class="size-8"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="M12 4.5v15m7.5-7.5h-15"
+                                />
+                            </svg>
                         </button>
                     </div>
                 // Footer: Ingredients (empty)

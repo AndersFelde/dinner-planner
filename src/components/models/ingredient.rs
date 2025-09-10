@@ -31,7 +31,7 @@ pub fn DayIngredient(day_ingredient: IngredientWithBought) -> impl IntoView {
         <span
             class=move || {
                 if bought.get() {
-                    "inline-block px-3 py-1 m-1 rounded-full bg-green-200 text-green-900 border border-green-400 shadow-sm text-sm font-medium"
+                    "inline-block px-3 py-1 m-1 rounded-full bg-green-200 text-green-900 border border-green-400 shadow-sm text-sm font-medium line-through"
                 } else {
                     "inline-block px-3 py-1 m-1 rounded-full bg-red-100 text-red-900 border border-red-300 shadow-sm text-sm font-medium"
                 }

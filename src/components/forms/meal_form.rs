@@ -303,10 +303,10 @@ where
                                             required
                                         />
                                         // Amount display and buttons
-                                        <span class="flex items-center gap-1">
+                                        <span class="flex items-center gap-2">
                                             <button
                                                 type="button"
-                                                class="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
+                                                class="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 bg-white text-blue-600 text-lg font-bold shadow hover:bg-blue-100 hover:text-blue-800 transition"
                                                 on:click=move |_| {
                                                     set_ingredients
                                                         .update(|ings| {
@@ -318,12 +318,12 @@ where
                                             >
                                                 "-"
                                             </button>
-                                            <span class="px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 dark:text-white min-w-[2.5rem] text-center">
+                                            <span class="px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 dark:text-white min-w-[2.5rem] text-center font-semibold text-lg">
                                                 {ing.amount}
                                             </span>
                                             <button
                                                 type="button"
-                                                class="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
+                                                class="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 bg-white text-blue-600 text-lg font-bold shadow hover:bg-blue-100 hover:text-blue-800 transition"
                                                 on:click=move |_| {
                                                     set_ingredients
                                                         .update(|ings| {
