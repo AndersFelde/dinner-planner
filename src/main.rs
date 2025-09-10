@@ -10,9 +10,6 @@ pub mod db;
 pub mod api;
 
 #[cfg(feature = "ssr")]
-use tower_http::services::ServeDir;
-
-#[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() {
     use axum::Router;
@@ -44,7 +41,6 @@ async fn main() {
     }
 
     let app = Router::new()
-        .nest_service("/static", ServeDir::new("public")) // <-- Add this line
         .leptos_routes_with_context(
             &leptos_options,
             routes,

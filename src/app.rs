@@ -65,8 +65,8 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
                 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
                 <meta name="apple-mobile-web-app-title" content="Dinner for three" />
 
-                <link rel="apple-touch-icon" href="/static/icons/icon.png" />
-                <link rel="manifest" href="/static/manifest.json"/>
+                <link rel="apple-touch-icon" href="/icons/icon.png" />
+                <link rel="manifest" href="/manifest.json"/>
             </head>
             <body>
                 <App />
