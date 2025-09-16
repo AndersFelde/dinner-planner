@@ -1,6 +1,6 @@
 use crate::components::{
-    forms::day_form::*, forms::meal_form::*, meal_list::MealList, shopping_list::ShoppingList,
-    week::*,
+    forms::{day_form::*, extra_item_form::{CreateExtraItemForm, UpdateExtraItemForm}, meal_form::*}, meal_list::MealList, notifications::Notifications,
+    shopping_list::ShoppingList, week::*,
 };
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
@@ -16,8 +16,10 @@ use leptos_router::{
 pub enum RouteUrl {
     Home,
     NewMeal,
+    NewExtraItem,
     MealList,
     EditDay { id: i32 },
+    EditExtraItem { id: i32 },
     EditMeal { id: i32 },
     ShoppingList { week: u32, year: i32 },
 }
@@ -29,6 +31,8 @@ impl RouteUrl {
             RouteUrl::MealList => "/meals".to_string(),
             RouteUrl::EditDay { id } => format!("/edit/day/{id}"),
             RouteUrl::EditMeal { id } => format!("/edit/meal/{id}"),
+            RouteUrl::EditExtraItem { id } => format!("/edit/extra-item/{id}"),
+            RouteUrl::NewExtraItem => "/new/extra-item".to_string(),
             RouteUrl::ShoppingList { week, year } => format!("/shopping-list/{year}/{week}"),
         }
     }
@@ -61,12 +65,12 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
                 <AutoReload options=options.clone() />
                 <HydrationScripts options />
                 <MetaTags />
-                <meta name="mobile-web-app-capable" content="yes"/>
+                <meta name="mobile-web-app-capable" content="yes" />
                 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
                 <meta name="apple-mobile-web-app-title" content="Dinner for three" />
 
-                <link rel="apple-touch-icon" href="/icons/icon.png" />
-                <link rel="manifest" href="/manifest.json"/>
+                <link rel="apple-touch-icon" href="https://i.ibb.co/5XS4mWSy/icon.png" />
+                <link rel="manifest" href="/manifest.json" />
             </head>
             <body>
                 <App />
@@ -89,13 +93,16 @@ pub fn App() -> impl IntoView {
         <Title text="Dinner for three" />
 
         // content for this welcome page
+        <Notifications />
         <Router>
             <main>
                 <Routes fallback=|| "Page not found.".into_view()>
                     <Route path=path!("/") view=Week />
                     <Route path=path!("/new/meal") view=CreateMealForm />
-                    <Route path=path!("/edit/day/:id") view=DayForm />
                     <Route path=path!("/edit/meal/:id") view=UpdateMealForm />
+                    <Route path=path!("/new/extra-item") view=CreateExtraItemForm />
+                    <Route path=path!("/edit/extra-item/:id") view=UpdateExtraItemForm />
+                    <Route path=path!("/edit/day/:id") view=DayForm />
                     <Route path=path!("/shopping-list/:year/:week") view=ShoppingList />
                     <Route path=path!("/meals") view=MealList />
 

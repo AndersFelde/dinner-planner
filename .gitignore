@@ -19,3 +19,6 @@ end2end/playwright-report/
 playwright/.cache/
 pnpm-lock.yaml
 .env
+test-db.sqlite3
+test-db.sqlite3-shm
+test-db.sqlite3-wal

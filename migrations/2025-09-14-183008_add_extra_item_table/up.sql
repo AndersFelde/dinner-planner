@@ -1,0 +1,7 @@
+-- Your SQL goes here
+CREATE TABLE extra_items (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    name VARCHAR NOT NULL,
+    amount INTEGER NOT NULL,
+    bought BOOLEAN NOT NULL
+);

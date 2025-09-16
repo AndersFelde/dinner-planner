@@ -6,6 +6,9 @@ use crate::models::{
 #[cfg(feature = "ssr")]
 use diesel::prelude::*;
 
+#[cfg(feature = "ssr")]
+use crate::api::ssr::*;
+
 #[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
 pub struct DayWithMealAndIngredients {
     pub day: Day,
@@ -33,4 +36,24 @@ pub struct DayIngredient {
     pub day_id: i32,
     pub ingredient_id: i32,
     pub bought: bool,
+}
+
+#[cfg(feature = "ssr")]
+impl DayIngredient {
+    pub fn get_all(db: &mut DbConn) -> Result<Vec<DayIngredient>, Error>{
+        days_ingredients::table.select(DayIngredient::as_select()).load(db)
+    }
+    pub fn update(&self, db: &mut DbConn) -> Result<DayIngredient, Error>{
+        self.save_changes(db)
+    }
+    pub fn insert(&self, db: &mut DbConn) -> Result<DayIngredient, Error>{
+        insert_into(days_ingredients::table)
+            .values(self)
+            .get_result(db)
+    }
+    pub fn delete_for_day(db: &mut DbConn, id: i32) -> Result<usize, Error>{
+        delete(days_ingredients::table)
+            .filter(days_ingredients::day_id.eq(id))
+            .execute(db)
+    }
 }

@@ -19,6 +19,15 @@ diesel::table! {
 }
 
 diesel::table! {
+    extra_items (id) {
+        id -> Integer,
+        name -> Text,
+        amount -> Integer,
+        bought -> Bool,
+    }
+}
+
+diesel::table! {
     ingredients (id) {
         id -> Integer,
         name -> Text,
@@ -44,6 +53,7 @@ diesel::joinable!(ingredients -> meals (meal_id));
 diesel::allow_tables_to_appear_in_same_query!(
     days,
     days_ingredients,
+    extra_items,
     ingredients,
     meals,
 );

@@ -3,6 +3,8 @@ pub mod meal_list;
 pub mod models;
 pub mod shopping_list;
 pub mod week;
+pub mod csr;
+pub mod notifications;
 
 use leptos::prelude::*;
 

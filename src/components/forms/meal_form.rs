@@ -122,7 +122,7 @@ where
                 .map(|ingredient| IngredientForm {
                     name: ingredient.name.clone(),
                     amount: ingredient.amount,
-                    meal_id: Some(ingredient.meal_id),
+                    meal_id: ingredient.meal_id,
                 })
                 .collect(),
         )
@@ -134,7 +134,7 @@ where
             vec![IngredientForm {
                 name: String::from(""),
                 amount: 1,
-                meal_id: None,
+                meal_id: -1,
             }],
         )
     };
@@ -151,7 +151,7 @@ where
             ings.push(IngredientForm {
                 name: String::from(""),
                 amount: 1,
-                meal_id: None,
+                meal_id: -1,
             });
         });
     };

@@ -7,7 +7,7 @@ pub async fn get_meals() -> Result<Vec<Meal>, ServerFnError> {
     use crate::api::ssr::*;
     let db = &mut get_db()?;
     server_err!(
-        meals::table.select(Meal::as_select()).load(db),
+       Meal::get_all(db) ,
         "Could not get meals"
     )
 }
@@ -18,13 +18,11 @@ pub async fn get_meal(id: i32) -> Result<MealWithIngredients, ServerFnError> {
     let db = &mut get_db()?;
 
     let meal = server_err!(
-        meals::table.filter(meals::id.eq(id)).first::<Meal>(db),
+        Meal::get(db, id),
         "Could not get meal with id {id}"
     )?;
     let ingredients = server_err!(
-        Ingredient::belonging_to(&meal)
-            .select(Ingredient::as_select())
-            .load(db),
+        Ingredient::get_for_meal(db, meal.id),
         "Could not get ingredients for meal_id {id}"
     )?;
     Ok(MealWithIngredients { meal, ingredients })
@@ -35,7 +33,7 @@ pub async fn delete_meal(id: i32) -> Result<usize, ServerFnError> {
     use crate::api::ssr::*;
     let db = &mut get_db()?;
     server_err!(
-        delete(meals::table).filter(meals::id.eq(id)).execute(db),
+        Meal::delete(db, id),
         "Could not get meal with id {id}"
     )
 }
@@ -51,14 +49,14 @@ pub async fn update_meal_with_ingredients(
     use crate::api::ssr::*;
     let db = &mut get_db()?;
     server_err!(
-        update(meals::table).set(meal.clone()).execute(db),
+        meal.update(db),
         "Could not update meal {meal:?}"
     )?;
     // This is kinda hacky, but easy
     delete_ingredients(db, meal.id)?;
     let meal_days = get_days_for_meal(meal.id).await?;
     for mut ingredient_form in ingredient_forms {
-        ingredient_form.meal_id = Some(meal.id);
+        ingredient_form.meal_id = meal.id;
         let ingredient = insert_ingredient(db, ingredient_form)?;
         for day in meal_days.iter() {
             insert_day_ingredient(DayIngredient {
@@ -83,11 +81,11 @@ pub async fn create_meal_with_ingredients(
         meal_form.image = utils::get_image_url(meal_form.name.clone()).await?
     }
     let meal: Meal = server_err!(
-        insert_into(meals::table).values(&meal_form).get_result(db),
+        meal_form.insert(db),
         "Could not insert meal {meal_form:?}"
     )?;
     for mut ingredient_form in ingredient_forms {
-        ingredient_form.meal_id = Some(meal.id);
+        ingredient_form.meal_id = meal.id;
         insert_ingredient(db, ingredient_form)?;
     }
     Ok(())
@@ -152,5 +150,46 @@ mod utils {
             .map_err(|e| ServerFnError::new(e.to_string()))?;
 
         Ok(data.items[0].link.clone())
+    }
+}
+
+#[cfg(feature = "ssr")]
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::db::tests::TEST_POOL;
+    use crate::models::meal::MealForm;
+    use diesel::Connection;
+
+    #[test]
+    pub fn test_meals_all() {
+        let db = &mut TEST_POOL.clone().get().unwrap();
+        db.test_transaction(|db| -> Result<(), ()> {
+            let mut meal = MealForm {
+                name: String::new(),
+                image: String::new(),
+                recipie_url: None,
+            }
+            .insert(db)
+            .unwrap();
+            let meal_other = MealForm {
+                name: String::new(),
+                image: String::new(),
+                recipie_url: None,
+            }
+            .insert(db)
+            .unwrap();
+
+            assert_eq!(Meal::get_all(db).unwrap().len(), 2);
+            assert_eq!(meal, Meal::get(db, meal.id).unwrap());
+            meal.recipie_url = Some(String::new());
+            let meal = meal.update(db).unwrap();
+            assert_ne!(Meal::get(db, meal.id).unwrap().recipie_url, Meal::get(db, meal_other.id).unwrap().recipie_url);
+            Meal::delete(db, meal_other.id).unwrap();
+            assert_eq!(Meal::get_all(db).unwrap().len(), 1);
+            assert_eq!(Meal::get_all(db).unwrap(), vec![meal]);
+
+            Ok(())
+        });
     }
 }

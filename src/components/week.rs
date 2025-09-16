@@ -1,14 +1,17 @@
+
 use crate::components::error_list;
 use crate::components::models::day::Day;
 use crate::{
     api::week::{days_for_week, Week},
     app::RouteUrl,
 };
+use leptos::logging::log;
 use leptos::prelude::*;
 use leptos_router::{components::A, hooks::use_query};
 
 use leptos::Params;
 use leptos_router::params::Params;
+
 #[derive(Params, PartialEq, Clone)]
 pub struct WeekQuery {
     pub week: u32,

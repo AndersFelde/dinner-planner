@@ -1,6 +1,6 @@
 use crate::models::days_ingredients::DayIngredient;
 use crate::{
-    api::days_ingredients::upsert_day_ingredient, models::days_ingredients::IngredientWithBought,
+    api::days_ingredients::udpate_day_ingredient, models::days_ingredients::IngredientWithBought,
 };
 use leptos::prelude::*;
 
@@ -14,7 +14,7 @@ pub fn DayIngredient(day_ingredient: IngredientWithBought) -> impl IntoView {
     let update_ingredient_action = Action::new(move |bought: &bool| {
         let bought = bought.clone();
         async move {
-            upsert_day_ingredient(DayIngredient {
+            udpate_day_ingredient(DayIngredient {
                 day_id,
                 ingredient_id,
                 bought: bought,

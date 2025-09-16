@@ -13,7 +13,6 @@ pub mod api;
 #[tokio::main]
 async fn main() {
     use axum::Router;
-    use diesel::prelude::*;
     use dinner_planner::app::*;
     use leptos::logging::{error, log};
     use leptos::prelude::*;
@@ -26,14 +25,14 @@ async fn main() {
     // Generate the list of routes in your Leptos App
     let routes = generate_route_list(App);
 
+    // Get a pooled connection and run migrations on it
     match pool.get() {
-        Ok(mut con) => match diesel::sql_query("PRAGMA foreign_keys = ON").execute(&mut con) {
-            Ok(_) => (),
-            Err(e) => {
-                error!("Could not enable foreign keys: {e}");
+        Ok(mut con) => {
+            if let Err(e) = db::run_migrations(&mut con) {
+                error!("Could not run migrations: {e}");
                 return;
             }
-        },
+        }
         Err(e) => {
             error!("Could not get DB pool: {e}");
             return;
