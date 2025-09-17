@@ -48,7 +48,12 @@ pub fn ShoppingList() -> impl IntoView {
         },
     );
 
-    let extra_items_resource = OnceResource::new(get_extra_items_not_bought());
+    let extra_items_resource = Resource::new(|| {}, |_| get_extra_items_not_bought());
+    Effect::new(move |_| {
+        if !show_meals.get() {
+            extra_items_resource.refetch()
+        }
+    });
 
     let extra_items_data = move || {
         extra_items_resource.get().map(|extra_items| {
