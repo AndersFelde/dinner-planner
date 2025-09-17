@@ -8,6 +8,7 @@ use crate::api::ssr::*;
 #[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
 #[cfg_attr(feature = "ssr", derive(Insertable, AsChangeset))]
 #[cfg_attr(feature = "ssr", diesel(table_name = crate::schema::days))]
+#[cfg_attr(feature = "ssr", diesel(treat_none_as_null = true))]
 pub struct DayForm {
     pub date: NaiveDate,
     pub meal_id: Option<i32>,

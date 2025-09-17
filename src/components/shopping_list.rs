@@ -1,4 +1,4 @@
-use crate::api::extra_items::get_extra_items;
+use crate::api::extra_items::get_extra_items_not_bought;
 use crate::api::week::{days_for_week, Week};
 use crate::app::RouteUrl;
 use crate::components::error_list;
@@ -8,6 +8,7 @@ use leptos::prelude::*;
 use leptos_router::components::A;
 use leptos_router::hooks::{use_params, use_query_map};
 
+use crate::components::modal::Modal;
 use crate::components::models::extra_item::ExtraItem;
 use crate::components::models::ingredient::DayIngredient;
 use crate::components::week::WeekQuery;
@@ -17,6 +18,7 @@ pub fn ShoppingList() -> impl IntoView {
     let params = use_params::<WeekQuery>();
     let query_map = use_query_map();
     let (week, set_week) = signal(Week::current());
+    let (show_modal, set_show_modal) = signal(false);
     let show_meals = RwSignal::new(true);
     Effect::new(move || {
         if let Ok(query) = params.read().as_ref() {
@@ -46,27 +48,26 @@ pub fn ShoppingList() -> impl IntoView {
         },
     );
 
-    let extra_items_resource = OnceResource::new(get_extra_items());
+    let extra_items_resource = OnceResource::new(get_extra_items_not_bought());
 
     let extra_items_data = move || {
         extra_items_resource.get().map(|extra_items| {
             extra_items.map(|extra_items| match extra_items.len() {
                 x if x > 0 => Either::Right({
                     view! {
-                        <div class="mb-6 p-4 rounded-lg shadow bg-white dark:bg-gray-800">
-                            <ul class="flex justify-center items-center flex-wrap gap-2">
-                                {extra_items
-                                    .iter()
-                                    .map(|extra_item| {
-                                        view! {
-                                            <li>
-                                                <ExtraItem extra_item=extra_item.clone() />
-                                            </li>
-                                        }
-                                    })
-                                    .collect::<Vec<_>>()}
-                            </ul>
-                        </div>
+                        // <div class="mb-6 p-4 rounded-lg shadow bg-white dark:bg-gray-800">
+                        <ul class="flex flex-wrap flex-col sm:flex-row items-center gap-4">
+                            {extra_items
+                                .iter()
+                                .map(|extra_item| {
+                                    view! {
+                                        <li>
+                                            <ExtraItem extra_item=extra_item.clone() />
+                                        </li>
+                                    }
+                                })
+                                .collect::<Vec<_>>()}
+                        </ul>
                     }
                 }),
                 _ => Either::Left({
@@ -134,6 +135,9 @@ pub fn ShoppingList() -> impl IntoView {
     };
 
     view! {
+        <Modal show=show_modal>
+            <span>Hello world</span>
+        </Modal>
         <A href=move || {
             let week = week.get();
             format!("{}?week={}&year={}", RouteUrl::Home.to_string(), week.week, week.year)

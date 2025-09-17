@@ -2,4 +2,4 @@ target/
 node_modules/
 end2end/node_modules/
 .vscode/
-db.sqlite3
+db.sqlite3*

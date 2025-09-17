@@ -32,13 +32,13 @@ pub async fn delete_extra_item(
 }
 
 #[server]
-pub async fn get_extra_items(
+pub async fn get_extra_items_not_bought(
 ) -> Result<Vec<ExtraItem>, ServerFnError> {
     use crate::api::ssr::*;
 
     let db = &mut get_db()?;
     server_err!(
-        ExtraItem::get_all(db),
+        ExtraItem::get_all_not_bought(db),
         "Could not get extra items"
     )
 }

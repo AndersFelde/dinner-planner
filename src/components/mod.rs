@@ -5,6 +5,7 @@ pub mod shopping_list;
 pub mod week;
 pub mod csr;
 pub mod notifications;
+pub mod modal;
 
 use leptos::prelude::*;
 

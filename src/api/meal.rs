@@ -158,7 +158,7 @@ mod utils {
 mod test {
     use super::*;
     use crate::db::tests::TEST_POOL;
-    use crate::models::meal::MealForm;
+    use crate::models::meal::{Meal, MealForm};
     use diesel::Connection;
 
     #[test]
@@ -168,21 +168,21 @@ mod test {
             let mut meal = MealForm {
                 name: String::new(),
                 image: String::new(),
-                recipie_url: None,
+                recipie_url: Some(String::from("https://example.com")),
             }
             .insert(db)
             .unwrap();
             let meal_other = MealForm {
                 name: String::new(),
                 image: String::new(),
-                recipie_url: None,
+                recipie_url: Some(String::from("https://example.com")),
             }
             .insert(db)
             .unwrap();
 
             assert_eq!(Meal::get_all(db).unwrap().len(), 2);
             assert_eq!(meal, Meal::get(db, meal.id).unwrap());
-            meal.recipie_url = Some(String::new());
+            meal.recipie_url = None;
             let meal = meal.update(db).unwrap();
             assert_ne!(Meal::get(db, meal.id).unwrap().recipie_url, Meal::get(db, meal_other.id).unwrap().recipie_url);
             Meal::delete(db, meal_other.id).unwrap();

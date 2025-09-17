@@ -44,6 +44,9 @@ impl ExtraItem {
     pub fn get_all(db: &mut DbConn) -> Result<Vec<ExtraItem>, Error> {
         extra_items::table.select(ExtraItem::as_select()).load(db)
     }
+    pub fn get_all_not_bought(db: &mut DbConn) -> Result<Vec<ExtraItem>, Error> {
+        extra_items::table.filter(extra_items::bought.eq(false)).select(ExtraItem::as_select()).load(db)
+    }
     pub fn get(db: &mut DbConn, id:i32) -> Result<ExtraItem, Error> {
         extra_items::table.filter(extra_items::id.eq(id)).first::<ExtraItem>(db)
     }

@@ -33,6 +33,7 @@ impl MealForm {
     feature = "ssr",
     derive(Queryable, Selectable, AsChangeset, Identifiable)
 )]
+#[cfg_attr(feature = "ssr", diesel(treat_none_as_null = true))]
 #[cfg_attr(feature = "ssr", diesel(table_name = crate::schema::meals))]
 #[cfg_attr(feature = "ssr", diesel(check_for_backend(diesel::sqlite::Sqlite)))]
 #[derive(serde::Deserialize, serde::Serialize, Clone, Debug, PartialEq)]
