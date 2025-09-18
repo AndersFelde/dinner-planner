@@ -2,24 +2,29 @@ use crate::api::extra_items::get_extra_items_not_bought;
 use crate::api::week::{days_for_week, Week};
 use crate::app::RouteUrl;
 use crate::components::error_list;
+use crate::components::forms::extra_item_form::CreateExtraItemForm;
 use chrono::Datelike;
 use leptos::either::Either;
 use leptos::prelude::*;
 use leptos_router::components::A;
 use leptos_router::hooks::{use_params, use_query_map};
+use leptos_use::math::use_not;
 
 use crate::components::modal::Modal;
 use crate::components::models::extra_item::ExtraItem;
 use crate::components::models::ingredient::DayIngredient;
 use crate::components::week::WeekQuery;
+use crate::models::extra_item::ExtraItem;
+use crate::utils::NotificationCount;
 
 #[component]
 pub fn ShoppingList() -> impl IntoView {
     let params = use_params::<WeekQuery>();
     let query_map = use_query_map();
     let (week, set_week) = signal(Week::current());
-    let (show_modal, set_show_modal) = signal(false);
     let show_meals = RwSignal::new(true);
+    let extra_items: RwSignal<Vec<ExtraItem>> = RwSignal::new(Vec::new());
+    let notification_count = use_context::<NotificationCount>();
     Effect::new(move || {
         if let Ok(query) = params.read().as_ref() {
             set_week(Week {
@@ -49,41 +54,63 @@ pub fn ShoppingList() -> impl IntoView {
     );
 
     let extra_items_resource = Resource::new(|| {}, |_| get_extra_items_not_bought());
+    let create_extra_item_completed = RwSignal::new(true);
+    let show_create_extra_item = use_not(create_extra_item_completed);
+    let new_extra_item: RwSignal<Option<ExtraItem>> = RwSignal::new(None);
+    // let extra_items_resource = OnceResource::new(get_extra_items_not_bought());
+    // TODO: this is hacky
     Effect::new(move |_| {
         if !show_meals.get() {
             extra_items_resource.refetch()
         }
     });
+    Effect::watch(
+        move || extra_items_resource.get(),
+        move |r_extra_items, _, _| {
+            if let Some(Ok(r_extra_items)) = r_extra_items {
+                extra_items.set(r_extra_items.clone());
+            }
+        },
+        true,
+    );
+    Effect::watch(
+        move || new_extra_item.get(),
+        move |new_extra_item, _, _| {
+            if let Some(new_extra_item) = new_extra_item {
+                extra_items.write().push(new_extra_item.clone())
+            }
+        },
+        false,
+    );
 
     let extra_items_data = move || {
-        extra_items_resource.get().map(|extra_items| {
-            extra_items.map(|extra_items| match extra_items.len() {
-                x if x > 0 => Either::Right({
-                    view! {
-                        // <div class="mb-6 p-4 rounded-lg shadow bg-white dark:bg-gray-800">
-                        <ul class="flex flex-wrap flex-col sm:flex-row items-center gap-4">
-                            {extra_items
-                                .iter()
-                                .map(|extra_item| {
-                                    view! {
-                                        <li>
-                                            <ExtraItem extra_item=extra_item.clone() />
-                                        </li>
-                                    }
-                                })
-                                .collect::<Vec<_>>()}
-                        </ul>
-                    }
-                }),
-                _ => Either::Left({
-                    view! {
-                        <div class="bg-green-100 border border-green-400 text-green-800 px-4 py-3 rounded relative text-center font-semibold">
-                            "Noting more to buy (jippi)!"
-                        </div>
-                    }
-                }),
-            })
-        })
+        let extra_items = extra_items.get();
+        match extra_items.len() {
+            x if x > 0 => Either::Right({
+                view! {
+                    // <div class="mb-6 p-4 rounded-lg shadow bg-white dark:bg-gray-800">
+                    <ul class="flex flex-wrap flex-col sm:flex-row items-center gap-4">
+                        {extra_items
+                            .iter()
+                            .map(|extra_item| {
+                                view! {
+                                    <li>
+                                        <ExtraItem extra_item=extra_item.clone() />
+                                    </li>
+                                }
+                            })
+                            .collect::<Vec<_>>()}
+                    </ul>
+                }
+            }),
+            _ => Either::Left({
+                view! {
+                    <div class="bg-green-100 border border-green-400 text-green-800 px-4 py-3 rounded relative text-center font-semibold">
+                        "Noting more to buy (jippi)!"
+                    </div>
+                }
+            }),
+        }
     };
 
     // Local state for bought status per ingredient (keyed by day + ingredient name)
@@ -140,9 +167,6 @@ pub fn ShoppingList() -> impl IntoView {
     };
 
     view! {
-        <Modal show=show_modal>
-            <span>Hello world</span>
-        </Modal>
         <A href=move || {
             let week = week.get();
             format!("{}?week={}&year={}", RouteUrl::Home.to_string(), week.week, week.year)
@@ -214,29 +238,36 @@ pub fn ShoppingList() -> impl IntoView {
             false => {
                 Either::Right({
                     view! {
-                        <A href=RouteUrl::NewExtraItem.to_string()>
-                            <button
-                                type="button"
-                                class="fixed bottom-19 right-4 z-50 px-4 py-3 rounded-full bg-blue-500 text-white font-semibold text-base shadow-lg  focus:outline-none focus:ring-2  transition flex items-center justify-center whitespace-nowrap"
-                                title="Add meal"
+                        <Modal show=show_create_extra_item>
+                            <CreateExtraItemForm
+                                extra_item=new_extra_item
+                                completed=create_extra_item_completed.write_only()
+                            />
+                        </Modal>
+                        <button
+                            type="button"
+                            class="fixed bottom-19 right-4 z-50 px-4 py-3 rounded-full bg-blue-500 text-white font-semibold text-base shadow-lg  focus:outline-none focus:ring-2  transition flex items-center justify-center whitespace-nowrap"
+                            title="Add meal"
+                            on:click=move |_| {
+                                create_extra_item_completed.set(false);
+                            }
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke-width="1.5"
+                                stroke="currentColor"
+                                class="size-6"
                             >
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke-width="1.5"
-                                    stroke="currentColor"
-                                    class="size-6"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M12 4.5v15m7.5-7.5h-15"
-                                    />
-                                </svg>
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="M12 4.5v15m7.5-7.5h-15"
+                                />
+                            </svg>
 
-                            </button>
-                        </A>
+                        </button>
                         <div class="flex justify-center items-center gap-4 mb-2 sticky top-0 z-10 bg-white dark:bg-gray-800 py-2 shadow">
                             <span class="font-bold text-base text-gray-900 dark:text-white">
                                 "Shopping list - Extra items"

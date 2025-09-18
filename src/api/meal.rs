@@ -2,14 +2,19 @@ use crate::models::ingredient::IngredientForm;
 use crate::models::meal::{Meal, MealForm, MealWithIngredients};
 use leptos::prelude::*;
 
+#[cfg(feature= "ssr")]
+async fn get_image_url(image: String, name: String) -> Result<String, ServerFnError> {
+    if !utils::is_valid_url(&image) {
+        return utils::get_image_url(name).await;
+    }
+    Ok(image)
+}
+
 #[server]
 pub async fn get_meals() -> Result<Vec<Meal>, ServerFnError> {
     use crate::api::ssr::*;
     let db = &mut get_db()?;
-    server_err!(
-       Meal::get_all(db) ,
-        "Could not get meals"
-    )
+    server_err!(Meal::get_all(db), "Could not get meals")
 }
 
 #[server]
@@ -17,10 +22,7 @@ pub async fn get_meal(id: i32) -> Result<MealWithIngredients, ServerFnError> {
     use crate::api::ssr::*;
     let db = &mut get_db()?;
 
-    let meal = server_err!(
-        Meal::get(db, id),
-        "Could not get meal with id {id}"
-    )?;
+    let meal = server_err!(Meal::get(db, id), "Could not get meal with id {id}")?;
     let ingredients = server_err!(
         Ingredient::get_for_meal(db, meal.id),
         "Could not get ingredients for meal_id {id}"
@@ -32,63 +34,59 @@ pub async fn get_meal(id: i32) -> Result<MealWithIngredients, ServerFnError> {
 pub async fn delete_meal(id: i32) -> Result<usize, ServerFnError> {
     use crate::api::ssr::*;
     let db = &mut get_db()?;
-    server_err!(
-        Meal::delete(db, id),
-        "Could not get meal with id {id}"
-    )
+    server_err!(Meal::delete(db, id), "Could not get meal with id {id}")
 }
 
 #[server]
 pub async fn update_meal_with_ingredients(
     meal: Meal,
     ingredient_forms: Vec<IngredientForm>,
-) -> Result<(), ServerFnError> {
-    use crate::api::ingredient::{delete_ingredients, insert_ingredient};
-    use crate::api::days_ingredients::insert_day_ingredient;
+) -> Result<MealWithIngredients, ServerFnError> {
     use crate::api::day::get_days_for_meal;
+    use crate::api::days_ingredients::insert_day_ingredient;
+    use crate::api::ingredient::{delete_ingredients, insert_ingredient};
     use crate::api::ssr::*;
     let db = &mut get_db()?;
-    server_err!(
-        meal.update(db),
-        "Could not update meal {meal:?}"
-    )?;
+    let mut meal = meal.clone();
+    meal.image = get_image_url(meal.image.clone(), meal.name.clone()).await?;
+    server_err!(meal.update(db), "Could not update meal {meal:?}")?;
     // This is kinda hacky, but easy
     delete_ingredients(db, meal.id)?;
     let meal_days = get_days_for_meal(meal.id).await?;
+    let mut ingredients: Vec<Ingredient> = vec![];
     for mut ingredient_form in ingredient_forms {
         ingredient_form.meal_id = meal.id;
         let ingredient = insert_ingredient(db, ingredient_form)?;
+        let ingredient_id = ingredient.id.clone();
+        ingredients.push(ingredient);
         for day in meal_days.iter() {
             insert_day_ingredient(DayIngredient {
                 day_id: day.id,
-                ingredient_id: ingredient.id,
+                ingredient_id,
                 bought: false,
-            }).await?;
+            })
+            .await?;
         }
     }
-    Ok(())
+    Ok(MealWithIngredients { meal, ingredients })
 }
 #[server]
 pub async fn create_meal_with_ingredients(
     meal_form: MealForm,
     ingredient_forms: Vec<IngredientForm>,
-) -> Result<(), ServerFnError> {
+) -> Result<MealWithIngredients, ServerFnError> {
     use crate::api::ingredient::insert_ingredient;
     use crate::api::ssr::*;
     let db = &mut get_db()?;
     let mut meal_form = meal_form.clone();
-    if !utils::is_valid_url(&meal_form.image) {
-        meal_form.image = utils::get_image_url(meal_form.name.clone()).await?
-    }
-    let meal: Meal = server_err!(
-        meal_form.insert(db),
-        "Could not insert meal {meal_form:?}"
-    )?;
+    meal_form.image = get_image_url(meal_form.image.clone(), meal_form.name.clone()).await?;
+    let meal: Meal = server_err!(meal_form.insert(db), "Could not insert meal {meal_form:?}")?;
+    let mut ingredients = vec![];
     for mut ingredient_form in ingredient_forms {
         ingredient_form.meal_id = meal.id;
-        insert_ingredient(db, ingredient_form)?;
+        ingredients.push(insert_ingredient(db, ingredient_form)?);
     }
-    Ok(())
+    Ok(MealWithIngredients { meal, ingredients })
 }
 
 #[server]
@@ -184,7 +182,10 @@ mod test {
             assert_eq!(meal, Meal::get(db, meal.id).unwrap());
             meal.recipie_url = None;
             let meal = meal.update(db).unwrap();
-            assert_ne!(Meal::get(db, meal.id).unwrap().recipie_url, Meal::get(db, meal_other.id).unwrap().recipie_url);
+            assert_ne!(
+                Meal::get(db, meal.id).unwrap().recipie_url,
+                Meal::get(db, meal_other.id).unwrap().recipie_url
+            );
             Meal::delete(db, meal_other.id).unwrap();
             assert_eq!(Meal::get_all(db).unwrap().len(), 1);
             assert_eq!(Meal::get_all(db).unwrap(), vec![meal]);

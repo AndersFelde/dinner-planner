@@ -1,4 +1,10 @@
-use crate::models::day::{Day, DayForm};
+use crate::{
+    api::meal::get_meal,
+    models::{
+        day::{Day, DayForm},
+        days_ingredients::{DayWithMealAndIngredients, IngredientWithBought},
+    },
+};
 use leptos::prelude::*;
 
 #[server]
@@ -18,28 +24,45 @@ pub async fn get_days_for_meal(meal_id: i32) -> Result<Vec<Day>, ServerFnError> 
 }
 
 #[server]
-pub async fn upsert_day(day_form: DayForm) -> Result<(), ServerFnError> {
+pub async fn upsert_day(day_form: DayForm) -> Result<DayWithMealAndIngredients, ServerFnError> {
     use crate::api::days_ingredients::{delete_day_ingredient_for_day, insert_day_ingredient};
     use crate::api::ingredient::get_ingredients_for_meal;
     use crate::api::ssr::*;
     let db = &mut get_db()?;
-    let day_id = server_err!(
+    let day = server_err!(
         day_form.upsert(db),
         "Could not create day with {day_form:?}"
-    )?
-    .id;
-    delete_day_ingredient_for_day(day_id).await?;
+    )?;
+    delete_day_ingredient_for_day(day.id).await?;
+    let mut meal = None;
     if let Some(meal_id) = day_form.meal_id {
+        let mut ingredients: Vec<IngredientWithBought> = Vec::new();
         for ingredient in get_ingredients_for_meal(db, meal_id)? {
-            insert_day_ingredient(DayIngredient {
-                day_id: day_id,
+            let ingredient = insert_day_ingredient(DayIngredient {
+                day_id: day.id,
                 ingredient_id: ingredient.id,
                 bought: false,
             })
             .await?;
+            ingredients.push(IngredientWithBought {
+                day_id: day.id,
+                ingredient: server_err!(
+                    Ingredient::get(db, ingredient.ingredient_id),
+                    "Could not get ingredient {}",
+                    ingredient.ingredient_id
+                )?,
+                bought: ingredient.bought,
+            });
         }
+        meal = Some((
+            server_err!(Meal::get(db, meal_id), "Could not get meal {meal_id}")?,
+            ingredients,
+        ));
     }
-    Ok(())
+    Ok(DayWithMealAndIngredients {
+        day: day,
+        meal: meal,
+    })
 }
 
 #[cfg(feature = "ssr")]

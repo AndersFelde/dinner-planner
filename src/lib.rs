@@ -1,6 +1,7 @@
 pub mod app;
 mod models;
 pub mod api;
+pub mod utils;
 
 mod components;
 

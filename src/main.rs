@@ -1,4 +1,5 @@
 pub mod models;
+pub mod utils;
 
 #[cfg(feature = "ssr")]
 pub mod schema;
@@ -8,6 +9,7 @@ pub mod db;
 
 #[cfg(feature = "ssr")]
 pub mod api;
+
 
 #[cfg(feature = "ssr")]
 #[tokio::main]
@@ -43,7 +45,10 @@ async fn main() {
         .leptos_routes_with_context(
             &leptos_options,
             routes,
-            move || provide_context(pool.clone()),
+            move || {
+                provide_context(pool.clone());
+                provide_context(0 as utils::NotificationCount)
+            },
             {
                 let leptos_options = leptos_options.clone();
                 move || shell(leptos_options.clone())

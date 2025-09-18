@@ -4,112 +4,82 @@ use crate::components::error_list;
 use crate::models::ingredient::IngredientForm;
 use crate::models::meal::{Meal, MealForm, MealWithIngredients};
 use leptos::prelude::*;
-use leptos_router::components::A;
-use leptos_router::hooks::{use_navigate, use_params_map, use_query_map};
 
 #[component]
-pub fn UpdateMealForm() -> impl IntoView {
-    let params = use_params_map();
-    let meal_resource = Resource::new(
-        move || {
-            params
-                .read()
-                .get("id")
-                .and_then(|id| id.parse::<i32>().ok())
-        },
-        move |id| async move {
-            match id {
-                Some(id) => get_meal(id).await.map(Some),
-                None => Err(ServerFnError::new("No valid id provided")),
-            }
-        },
-    );
+pub fn UpdateMealForm(
+    meal: RwSignal<MealWithIngredients>,
+    completed: WriteSignal<bool>,
+) -> impl IntoView {
     let add_meal_action = Action::new(|input: &(Meal, Vec<IngredientForm>)| {
         let meal = input.0.clone();
         let ingredients = input.1.clone();
         async move { update_meal_with_ingredients(meal, ingredients).await }
     });
-    let query = use_query_map();
-    let navigate = use_navigate();
-    let redirect = move || {
-        if let Some(url) = query.read().get("redirect") {
-            navigate(&url, Default::default());
-        } else {
-            navigate(&RouteUrl::Home.to_string(), Default::default());
-        }
-    };
     Effect::new(move || {
-        if let Some(Ok(_)) = add_meal_action.value().get() {
-            redirect();
+        if let Some(Ok(new_meal)) = add_meal_action.value().get() {
+            meal.set(new_meal);
+            completed.set(true)
         }
     });
-    // match meal_resource.get() {
-    //     Some(Ok(meal)) => Either::Left({
-    let meal_form = move || {
-        meal_resource.get().map(|meal| {
-            meal.map(|meal| {
-                meal.map(|meal| {
-                    let id = meal.meal.id.clone();
-                    let on_submit =
-                        move |meal_form: MealForm, ingredient_forms: Vec<IngredientForm>| {
-                            add_meal_action.dispatch((
-                                Meal {
-                                    id,
-                                    name: meal_form.name,
-                                    image: meal_form.image,
-                                    recipie_url: meal_form.recipie_url,
-                                },
-                                ingredient_forms,
-                            ));
-                        };
-                    view! { <MealForm meal=Some(meal) on_submit=on_submit /> }
-                })
-            })
-        })
+    let on_cancel = move || completed.set(true);
+    let on_submit = move |meal_form: MealForm, ingredient_forms: Vec<IngredientForm>| {
+        add_meal_action.dispatch((
+            Meal {
+                id: meal.read().meal.id.clone(),
+                name: meal_form.name,
+                image: meal_form.image,
+                recipie_url: meal_form.recipie_url,
+            },
+            ingredient_forms,
+        ));
     };
     view! {
         <Transition fallback=move || {
             view! { <span>"Loading..."</span> }
         }>
-            <ErrorBoundary fallback=error_list>{meal_form}</ErrorBoundary>
+            <ErrorBoundary fallback=error_list>
+                {move || {
+                    view! {
+                        <MealForm meal=Some(meal.get()) on_submit=on_submit on_cancel=on_cancel />
+                    }
+                }}
+            </ErrorBoundary>
         //
         </Transition>
     }
     // if let Some(Ok(meal)) = meal_resource.get() {
 }
 #[component]
-pub fn CreateMealForm() -> impl IntoView {
+pub fn CreateMealForm(meal: RwSignal<Option<MealWithIngredients>>, completed: WriteSignal<bool>) -> impl IntoView {
     let add_meal_action = Action::new(|input: &(MealForm, Vec<IngredientForm>)| {
         let meal_form = input.0.clone();
         let ingredients = input.1.clone();
         async move { create_meal_with_ingredients(meal_form, ingredients).await }
     });
-    let query = use_query_map();
-    let navigate = use_navigate();
-    // TODO: move into meal form
-    let redirect = move || {
-        if let Some(url) = query.read().get("redirect") {
-            navigate(&url, Default::default());
-        } else {
-            navigate(&RouteUrl::Home.to_string(), Default::default());
-        }
-    };
+
     Effect::new(move || {
-        if let Some(Ok(_)) = add_meal_action.value().get() {
-            redirect();
+        if let Some(Ok(new_meal)) = add_meal_action.value().get() {
+            meal.set(Some(new_meal));
+            completed.set(true)
         }
     });
 
     let on_submit = move |meal_form: MealForm, ingredient_forms: Vec<IngredientForm>| {
         add_meal_action.dispatch((meal_form, ingredient_forms));
     };
-    view! { <MealForm meal=None on_submit=on_submit /> }
+    let on_cancel = move || completed.set(true);
+    view! { <MealForm meal=None on_submit=on_submit on_cancel=on_cancel /> }
 }
 
 #[component]
-pub fn MealForm<A>(meal: Option<MealWithIngredients>, on_submit: A) -> impl IntoView
+pub fn MealForm<A, B>(
+    meal: Option<MealWithIngredients>,
+    on_submit: A,
+    on_cancel: B,
+) -> impl IntoView
 where
     A: Fn(MealForm, Vec<IngredientForm>) + 'static,
+    B: Fn() + 'static,
 {
     // Signals for meal fields
     let (name, image, recipie_url, ingredients) = if let Some(meal) = meal.clone() {
@@ -191,8 +161,11 @@ where
     };
 
     view! {
-        <div class="max-w-lg mx-auto mt-8 p-6 bg-white dark:bg-gray-900 rounded-xl shadow-lg">
-            <A href=RouteUrl::Home attr:class="text-blue-500 hover:underline mb-4 inline-block">
+        <div class="w-full max-w-md sm:max-w-lg mx-auto p-6 bg-white dark:bg-gray-900 rounded-xl shadow-lg">
+            <button
+                class="text-blue-500 hover:underline mb-4 inline-block"
+                on:click=move |_| on_cancel()
+            >
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
@@ -208,7 +181,7 @@ where
                     />
                 </svg>
 
-            </A>
+            </button>
             <form on:submit=form_submit class="space-y-6">
                 <h2 class="font-bold text-2xl mb-4 text-gray-900 dark:text-white text-center">
                     {action_name}
