@@ -1,4 +1,5 @@
 // #[cfg(not(feature = "ssr"))]
+#[allow(unused)]
 pub enum NotificationStatus {
     Granted,
     Denied,
@@ -10,7 +11,6 @@ pub enum NotificationStatus {
 pub mod js {
     use crate::components::csr::NotificationStatus;
     use js_sys::{Function, Promise, Reflect};
-    use leptos::logging::log;
     use leptos::task::spawn_local;
     use wasm_bindgen::prelude::*;
     use wasm_bindgen::JsCast;
@@ -78,6 +78,7 @@ pub mod js {
         }
     }
 
+    #[allow(unused)]
     pub fn clear_badge() {
         if let Some((nav, f)) = get_badge_fn("clearAppBadge") {
             let _ = f.call0(&nav).map(|promise| {
@@ -96,6 +97,8 @@ pub mod js {
     use crate::components::csr::NotificationStatus;
 
     pub fn set_badge(_: usize) {}
+
+    #[allow(unused)]
     pub fn clear_badge() {}
     pub fn check_notification_permission() -> NotificationStatus {
         NotificationStatus::NotAvailable

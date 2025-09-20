@@ -5,7 +5,6 @@ use crate::components::forms::meal_form::CreateMealForm;
 use crate::components::modal::Modal;
 use crate::components::models::meal::Meal;
 use crate::models::meal::MealWithIngredients;
-use leptos::html::search;
 use leptos::prelude::*;
 use leptos_router::components::A;
 use leptos_use::math::use_not;

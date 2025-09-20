@@ -1,12 +1,7 @@
-use crate::api::extra_items::{get_extra_item, insert_extra_item, update_extra_item};
-use crate::api::week::Week;
-use crate::app::RouteUrl;
-use crate::components::error_list;
+use crate::api::extra_items::insert_extra_item;
 use crate::models::extra_item::{ExtraItem, ExtraItemForm};
 use leptos::html::Input;
 use leptos::prelude::*;
-use leptos_router::components::A;
-use leptos_router::hooks::{use_navigate, use_params_map, use_query_map};
 
 // #[component]
 // pub fn UpdateExtraItemForm() -> impl IntoView {
@@ -104,25 +99,22 @@ pub fn CreateExtraItemForm(
     let on_submit = move |extra_item_form: ExtraItemForm| {
         add_extra_item_action.dispatch(extra_item_form);
     };
-    let on_cancel = move || completed.set(true);
-    view! { <ExtraItemForm extra_item=None on_submit=on_submit on_cancel=on_cancel /> }
+    view! { <ExtraItemForm extra_item=None on_submit=on_submit /> }
 }
 
 #[component]
-pub fn ExtraItemForm<A, B>(
+pub fn ExtraItemForm<A>(
     extra_item: Option<ExtraItem>,
     on_submit: A,
-    on_cancel: B,
 ) -> impl IntoView
 where
     A: Fn(ExtraItemForm) + 'static,
-    B: Fn() + 'static,
 {
     // Signals for meal fields
-    let (name, amount, bought) = if let Some(extra_item) = extra_item.clone() {
-        (extra_item.name, extra_item.amount, extra_item.bought)
+    let (name, amount) = if let Some(extra_item) = extra_item.clone() {
+        (extra_item.name, extra_item.amount)
     } else {
-        (String::new(), 1, false)
+        (String::new(), 1)
     };
     let name = RwSignal::new(name);
     let amount = RwSignal::new(amount);

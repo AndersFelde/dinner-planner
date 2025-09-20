@@ -4,11 +4,9 @@ use crate::components::forms::meal_form::CreateMealForm;
 use crate::components::models::ingredient::DayIngredient;
 use crate::models::days_ingredients::DayWithMealAndIngredients;
 use crate::models::meal::{Meal, MealWithIngredients};
-use crate::{app::RouteUrl, components::modal::Modal};
+use crate::components::modal::Modal;
 use chrono::{Datelike, Local};
-use leptos::logging::log;
 use leptos::{either::Either, html::Div, prelude::*};
-use leptos_router::components::A;
 use leptos_use::math::use_not;
 use web_sys::ScrollIntoViewOptions;
 

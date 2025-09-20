@@ -1,4 +1,3 @@
-use leptos::logging::log;
 use leptos::{html::Div, prelude::*};
 use leptos_use::on_click_outside;
 #[component]

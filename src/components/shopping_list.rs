@@ -5,10 +5,8 @@ use crate::components::error_list;
 use crate::components::forms::extra_item_form::CreateExtraItemForm;
 use crate::models::days_ingredients::DayWithMealAndIngredients;
 use chrono::{Datelike, Local};
-use leptos::either::Either;
 use leptos::prelude::*;
 use leptos_router::components::A;
-use leptos_router::hooks::{use_params, use_query_map};
 use leptos_use::math::use_not;
 use reactive_stores::Store;
 
@@ -16,7 +14,6 @@ use crate::app::GlobalState;
 use crate::components::modal::Modal;
 use crate::components::models::extra_item::ExtraItem;
 use crate::components::models::ingredient::DayIngredient;
-use crate::components::week::WeekQuery;
 use crate::models::extra_item::ExtraItem;
 
 #[component]
