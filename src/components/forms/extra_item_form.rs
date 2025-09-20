@@ -3,6 +3,7 @@ use crate::api::week::Week;
 use crate::app::RouteUrl;
 use crate::components::error_list;
 use crate::models::extra_item::{ExtraItem, ExtraItemForm};
+use leptos::html::Input;
 use leptos::prelude::*;
 use leptos_router::components::A;
 use leptos_router::hooks::{use_navigate, use_params_map, use_query_map};
@@ -125,7 +126,12 @@ where
     };
     let name = RwSignal::new(name);
     let amount = RwSignal::new(amount);
-    let bought = RwSignal::new(bought);
+    let input_ref = NodeRef::<Input>::new();
+    Effect::new(move || {
+        if let Some(input) = input_ref.get() {
+            let _ = input.focus();
+        }
+    });
 
     // Add new ingredient field
 
@@ -138,7 +144,7 @@ where
         on_submit(ExtraItemForm {
             name: name.get(),
             amount: amount.get(),
-            bought: bought.get(),
+            bought: false,
         });
     };
 
@@ -152,38 +158,18 @@ where
 
     view! {
         <div class="w-full max-w-md sm:max-w-lg mx-auto p-6 bg-white dark:bg-gray-900 rounded-xl shadow-lg">
-            <button
-                class="text-blue-500 hover:underline mb-4 inline-block"
-                on:click=move |_| on_cancel()
-            >
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke-width="1.5"
-                    stroke="currentColor"
-                    class="size-6"
-                >
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
-                    />
-                </svg>
-
-            </button>
             <form on:submit=form_submit class="space-y-6">
-                <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border mb-2 flex flex-col flex-nowrap gap-2 items-center justify-center">
-                    <div>
-                        <input
-                            type="text"
-                            placeholder="Name"
-                            prop:value=name
-                            bind:value=name
-                            class="px-3 py-2 flex-1 min-w-0 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-gray-700 dark:text-white"
-                            required
-                        />
-                    </div>
+                <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border mb-2 flex flex-row flex-nowrap gap-2 items-center justify-center">
+                    <input
+                        node_ref=input_ref
+                        type="text"
+                        placeholder="Name"
+                        prop:value=name
+                        bind:value=name
+                        class="px-3 py-2 flex-1 min-w-0 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-gray-700 dark:text-white"
+                        required
+                        autofocus
+                    />
                     // Amount display and buttons
                     <div class="flex flex-row flex-nowrap">
                         <span class="flex items-center gap-2">
@@ -205,15 +191,6 @@ where
                                 "+"
                             </button>
                         </span>
-                        <label class="flex items-center gap-2 ml-4">
-                            <input
-                                type="checkbox"
-                                prop:checked=bought
-                                bind:checked=bought
-                                class="form-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-400"
-                            />
-                            <span class="text-gray-700 dark:text-gray-200">Bought</span>
-                        </label>
                     </div>
                 </div>
                 <button

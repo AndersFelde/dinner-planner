@@ -24,7 +24,7 @@ pub fn ExtraItem(extra_item: ExtraItem) -> impl IntoView {
         <span
             class=move || {
                 format!(
-                    "flex flex-row items-center justify-center w-full max-w-sm min-h-[60px] px-6 py-3 m-3 rounded-xl border-2 shadow text-base font-semibold transition-colors duration-200 cursor-pointer space-x-4 {}",
+                    "flex flex-row items-center justify-center max-w-sm px-6 py-3 space-x-4 rounded-xl border-2 shadow text-base font-semibold transition-colors duration-200 cursor-pointer {}",
                     if bought.get() {
                         "bg-green-200 text-green-900 border-green-400 line-through"
                     } else {

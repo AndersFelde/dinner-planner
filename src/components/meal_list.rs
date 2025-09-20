@@ -5,6 +5,7 @@ use crate::components::forms::meal_form::CreateMealForm;
 use crate::components::modal::Modal;
 use crate::components::models::meal::Meal;
 use crate::models::meal::MealWithIngredients;
+use leptos::html::search;
 use leptos::prelude::*;
 use leptos_router::components::A;
 use leptos_use::math::use_not;
@@ -16,6 +17,7 @@ pub fn MealList() -> impl IntoView {
     let show_create = use_not(create_completed);
     let new_meal: RwSignal<Option<MealWithIngredients>> = RwSignal::new(None);
     let meals: RwSignal<Vec<MealWithIngredients>> = RwSignal::new(Vec::new());
+    let search_input = RwSignal::new(String::new());
 
     Effect::watch(
         move || meals_resource.get(),
@@ -37,11 +39,22 @@ pub fn MealList() -> impl IntoView {
     );
     // Close modal when create_completed becomes true
     let meals_data = move || {
-        meals
-            .get()
-            .iter()
+        let meals_vec = meals.get();
+        let search_input = search_input.get();
+        let filtered = if !search_input.is_empty() {
+            let search_input = search_input.to_lowercase();
+            meals_vec
+                .iter()
+                .filter(|m| m.meal.name.to_lowercase().contains(&search_input))
+                .cloned()
+                .collect::<Vec<_>>()
+        } else {
+            meals_vec.clone()
+        };
+        filtered
+            .into_iter()
             .map(|meal| {
-                view! { <Meal meal=meal.clone() /> }
+                view! { <Meal meal=meal /> }
             })
             .collect::<Vec<_>>()
     };
@@ -93,7 +106,18 @@ pub fn MealList() -> impl IntoView {
             </svg>
 
         </button>
+        <div class="flex justify-center items-center gap-4 mb-2 sticky top-0 z-10 bg-white dark:bg-gray-800 py-2 shadow">
+            <span class="font-bold text-base text-gray-900 dark:text-white">"Meals"</span>
+        </div>
 
+        <input
+            type="text"
+            placeholder="Search"
+            prop:value=search_input
+            bind:value=search_input
+            class="px-3 py-2 flex-1 min-w-0 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-gray-700 dark:text-white"
+            required
+        />
         <Transition fallback=move || {
             view! { <p class="text-center text-gray-400 dark:text-gray-800">"Loading..."</p> }
         }>

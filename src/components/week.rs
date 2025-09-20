@@ -1,4 +1,3 @@
-
 use crate::components::error_list;
 use crate::components::models::day::Day;
 use crate::{
@@ -67,14 +66,7 @@ pub fn Week() -> impl IntoView {
 
             </button>
         </A>
-        <A href=move || {
-            let w = week.get();
-            RouteUrl::ShoppingList {
-                week: w.week,
-                year: w.year,
-            }
-                .to_string()
-        }>
+        <A href=RouteUrl::ShoppingList.to_string()>
             <button
                 type="button"
                 class="fixed bottom-4 right-4 z-50 px-4 py-3 rounded-full bg-blue-500 text-white font-semibold text-base shadow-lg  focus:outline-none focus:ring-2  transition flex items-center justify-center whitespace-nowrap"

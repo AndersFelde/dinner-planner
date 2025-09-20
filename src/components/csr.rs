@@ -64,7 +64,7 @@ pub mod js {
         Some((nav, f))
     }
 
-    pub fn set_badge(count: u32) {
+    pub fn set_badge(count: usize) {
         if let Some((nav, f)) = get_badge_fn("setAppBadge") {
             let _ = f
                 .call1(&nav, &JsValue::from_f64(count as f64))
@@ -95,7 +95,7 @@ pub mod js {
 pub mod js {
     use crate::components::csr::NotificationStatus;
 
-    pub fn set_badge(_: u32) {}
+    pub fn set_badge(_: usize) {}
     pub fn clear_badge() {}
     pub fn check_notification_permission() -> NotificationStatus {
         NotificationStatus::NotAvailable

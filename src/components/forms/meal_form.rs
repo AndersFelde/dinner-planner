@@ -3,7 +3,9 @@ use crate::app::RouteUrl;
 use crate::components::error_list;
 use crate::models::ingredient::IngredientForm;
 use crate::models::meal::{Meal, MealForm, MealWithIngredients};
+use leptos::html::Input;
 use leptos::prelude::*;
+use leptos::logging::log;
 
 #[component]
 pub fn UpdateMealForm(
@@ -50,7 +52,10 @@ pub fn UpdateMealForm(
     // if let Some(Ok(meal)) = meal_resource.get() {
 }
 #[component]
-pub fn CreateMealForm(meal: RwSignal<Option<MealWithIngredients>>, completed: WriteSignal<bool>) -> impl IntoView {
+pub fn CreateMealForm(
+    meal: RwSignal<Option<MealWithIngredients>>,
+    completed: WriteSignal<bool>,
+) -> impl IntoView {
     let add_meal_action = Action::new(|input: &(MealForm, Vec<IngredientForm>)| {
         let meal_form = input.0.clone();
         let ingredients = input.1.clone();
@@ -81,6 +86,14 @@ where
     A: Fn(MealForm, Vec<IngredientForm>) + 'static,
     B: Fn() + 'static,
 {
+    let input_ref = NodeRef::<Input>::new();
+    if meal.is_none() {
+        Effect::new(move || {
+            if let Some(input) = input_ref.get() {
+                let _ = input.focus();
+            }
+        });
+    }
     // Signals for meal fields
     let (name, image, recipie_url, ingredients) = if let Some(meal) = meal.clone() {
         (
@@ -116,7 +129,15 @@ where
     let (ingredients, set_ingredients) = signal(ingredients);
 
     // Add new ingredient field
+    let adding_ingredients = RwSignal::new(false);
+    let ingredient_input_ref = NodeRef::<Input>::new();
+    Effect::new(move || {
+        if let Some(input) = ingredient_input_ref.get() {
+            let _ = input.focus();
+        }
+    });
     let add_ingredient = move |_| {
+        adding_ingredients.set(true);
         set_ingredients.update(|ings| {
             ings.push(IngredientForm {
                 name: String::from(""),
@@ -188,6 +209,7 @@ where
                 </h2>
                 <div class="space-y-3">
                     <input
+                        node_ref=input_ref
                         type="text"
                         placeholder="Meal name"
                         prop:value=name
@@ -273,6 +295,13 @@ where
                                                     .update(|ings| ings[idx].name = ev.target().value())
                                             }
                                             class="px-3 py-2 flex-1 min-w-0 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-gray-700 dark:text-white"
+                                            node_ref=if adding_ingredients.get()
+                                                && idx == (ingredients.get().len() - 1)
+                                            {
+                                                ingredient_input_ref
+                                            } else {
+                                                NodeRef::default()
+                                            }
                                             required
                                         />
                                         // Amount display and buttons

@@ -12,6 +12,14 @@ use leptos_router::{
 // <Route path=path!("/") view=Week />
 // <Route path=path!("/new/meal") view=MealForm />
 // <Route path=path!("/edit/day/:id") view=DayForm />
+use reactive_stores::Store;
+
+#[derive(Clone, Debug, Default, Store)]
+pub struct GlobalState {
+    extra_items_count: usize,
+    week_ingredients_count: usize
+}
+
 #[derive(Clone)]
 pub enum RouteUrl {
     Home,
@@ -21,7 +29,7 @@ pub enum RouteUrl {
     // EditDay { id: i32 },
     // EditExtraItem { id: i32 },
     // EditMeal { id: i32 },
-    ShoppingList { week: u32, year: i32 },
+    ShoppingList,
 }
 impl RouteUrl {
     fn as_path(&self) -> String {
@@ -33,7 +41,7 @@ impl RouteUrl {
             // RouteUrl::EditMeal { id } => format!("/edit/meal/{id}"),
             // RouteUrl::EditExtraItem { id } => format!("/edit/extra-item/{id}"),
             // RouteUrl::NewExtraItem => "/new/extra-item".to_string(),
-            RouteUrl::ShoppingList { week, year } => format!("/shopping-list/{year}/{week}"),
+            RouteUrl::ShoppingList =>"/shopping-list".to_string()
         }
     }
 
@@ -83,6 +91,7 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
 pub fn App() -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
+    provide_context(Store::new(GlobalState::default()));
 
     view! {
         // injects a stylesheet into the document <head>
@@ -103,7 +112,7 @@ pub fn App() -> impl IntoView {
                     // <Route path=path!("/new/extra-item") view=CreateExtraItemForm />
                     // <Route path=path!("/edit/extra-item/:id") view=UpdateExtraItemForm />
                     // <Route path=path!("/edit/day/:id") view=DayForm />
-                    <Route path=path!("/shopping-list/:year/:week") view=ShoppingList />
+                    <Route path=path!("/shopping-list") view=ShoppingList />
                     <Route path=path!("/meals") view=MealList />
 
                 </Routes>

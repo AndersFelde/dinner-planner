@@ -9,6 +9,7 @@ use crate::models::days_ingredients::DayWithMealAndIngredients;
 use crate::models::meal::Meal;
 use crate::models::meal::MealWithIngredients;
 use chrono::{Datelike, Local, NaiveDate};
+use leptos::html::Select;
 use leptos::prelude::*;
 use leptos_router::components::A;
 use leptos_router::hooks::{use_location, use_navigate, use_params_map};
@@ -23,6 +24,12 @@ pub fn DayForm(
 ) -> impl IntoView {
     let (date, set_date) = signal(String::new());
     let (meal_id, set_meal_id) = signal(-1 as i32);
+    let input_ref = NodeRef::<Select>::new();
+    Effect::new(move || {
+        if let Some(input) = input_ref.get() {
+            let _ = input.focus();
+        }
+    });
 
     // let meals_resource = OnceResource::new(get_meals());
 
@@ -101,26 +108,6 @@ pub fn DayForm(
             set_meal_id.set(day.day.meal_id.unwrap_or(-1));
             view! {
                 <div class="max-w-lg w-full mx-auto p-6 bg-white dark:bg-gray-900 rounded-xl shadow-lg">
-                    <button
-                        class="text-blue-500 hover:underline mb-4 inline-block"
-                        on:click=move |_| completed.set(true)
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke-width="1.5"
-                            stroke="currentColor"
-                            class="size-6"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
-                            />
-                        </svg>
-
-                    </button>
                     <form on:submit=on_submit class="space-y-6">
                         <h2 class="font-bold text-2xl mb-4 text-gray-900 dark:text-white text-center">
                             Update Day
@@ -148,6 +135,7 @@ pub fn DayForm(
                                         .map(|id| set_meal_id(id));
                                 }
                                 class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-gray-800 dark:text-white"
+                                node_ref=input_ref
                                 required
                             >
                                 <Transition fallback=move || {
