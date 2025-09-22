@@ -1,7 +1,7 @@
 use crate::components::{
-    meal_list::MealList, notifications::Notifications,
-    shopping_list::ShoppingList, week::*,
+    notifications::Notifications
 };
+use crate::routes::{meal_list::MealList, shopping_list::ShoppingList, week::Week};
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
@@ -9,39 +9,27 @@ use leptos_router::{
     path,
 };
 
-// <Route path=path!("/") view=Week />
-// <Route path=path!("/new/meal") view=MealForm />
-// <Route path=path!("/edit/day/:id") view=DayForm />
+
 use reactive_stores::Store;
 
 #[derive(Clone, Debug, Default, Store)]
 pub struct GlobalState {
     extra_items_count: usize,
-    week_ingredients_count: usize
+    week_ingredients_count: usize,
 }
 
 #[derive(Clone)]
 pub enum RouteUrl {
     Home,
-    // NewMeal,
-    // NewExtraItem,
     MealList,
-    // EditDay { id: i32 },
-    // EditExtraItem { id: i32 },
-    // EditMeal { id: i32 },
     ShoppingList,
 }
 impl RouteUrl {
     fn as_path(&self) -> String {
         match self {
             RouteUrl::Home => "/".to_string(),
-            // RouteUrl::NewMeal => "/new/meal".to_string(),
             RouteUrl::MealList => "/meals".to_string(),
-            // RouteUrl::EditDay { id } => format!("/edit/day/{id}"),
-            // RouteUrl::EditMeal { id } => format!("/edit/meal/{id}"),
-            // RouteUrl::EditExtraItem { id } => format!("/edit/extra-item/{id}"),
-            // RouteUrl::NewExtraItem => "/new/extra-item".to_string(),
-            RouteUrl::ShoppingList =>"/shopping-list".to_string()
+            RouteUrl::ShoppingList => "/shopping-list".to_string(),
         }
     }
 
@@ -107,11 +95,6 @@ pub fn App() -> impl IntoView {
             <main>
                 <Routes fallback=|| "Page not found.".into_view()>
                     <Route path=path!("/") view=Week />
-                    // <Route path=path!("/new/meal") view=CreateMealForm />
-                    // <Route path=path!("/edit/meal/:id") view=UpdateMealForm />
-                    // <Route path=path!("/new/extra-item") view=CreateExtraItemForm />
-                    // <Route path=path!("/edit/extra-item/:id") view=UpdateExtraItemForm />
-                    // <Route path=path!("/edit/day/:id") view=DayForm />
                     <Route path=path!("/shopping-list") view=ShoppingList />
                     <Route path=path!("/meals") view=MealList />
 

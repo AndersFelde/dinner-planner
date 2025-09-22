@@ -39,17 +39,10 @@ pub fn ShoppingList() -> impl IntoView {
         year: now.year(),
     }));
 
-    let extra_items_resource = Resource::new(|| {}, |_| get_extra_items_not_bought());
+    let extra_items_resource = OnceResource::new(get_extra_items_not_bought());
     let create_extra_item_completed = RwSignal::new(true);
     let show_create_extra_item = use_not(create_extra_item_completed);
     let new_extra_item: RwSignal<Option<ExtraItem>> = RwSignal::new(None);
-    // let extra_items_resource = OnceResource::new(get_extra_items_not_bought());
-    // TODO: this is hacky
-    // Effect::new(move |_| {
-    //     if !show_meals.get() {
-    //         extra_items_resource.refetch()
-    //     }
-    // });
     Effect::watch(
         move || extra_items_resource.get(),
         move |r_extra_items, _, _| {
@@ -82,7 +75,7 @@ pub fn ShoppingList() -> impl IntoView {
         move |extra_items, _, _| extra_items_count.set(extra_items.len()),
         false,
     );
-    // TODO: this should maybe be server side
+
     Effect::watch(
         move || days.get(),
         move |days, _, _| {
@@ -232,7 +225,7 @@ pub fn ShoppingList() -> impl IntoView {
                 view! { <p class="text-center text-gray-500 dark:text-gray-400">"Loading..."</p> }
             }>
                 <div class="flex items-center justify-center mx-5 ">
-                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 w-full max-w-3xl">
+                    <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full max-w-3xl">
                         <ErrorBoundary fallback=error_list>{move || days_data()}</ErrorBoundary>
                     </div>
                 </div>

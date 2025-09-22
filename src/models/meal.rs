@@ -50,6 +50,14 @@ impl Meal {
     pub fn get_all(db: &mut DbConn) -> Result<Vec<Meal>, Error> {
         meals::table.select(Meal::as_select()).load(db)
     }
+    pub fn get_all_ordered(db: &mut DbConn) -> Result<Vec<Meal>, Error> {
+        use diesel::dsl::sql;
+        meals::table
+            .select(Meal::as_select())
+            .order(sql::<diesel::sql_types::Text>("name COLLATE NOCASE ASC"))
+            // .order(meals::name.desc())
+            .load(db)
+    }
     pub fn get(db: &mut DbConn, id: i32) -> Result<Meal, Error> {
         meals::table.filter(meals::id.eq(id)).first::<Meal>(db)
     }

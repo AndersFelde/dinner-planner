@@ -1,4 +1,4 @@
-use leptos::prelude::*;
+use leptos::{either::Either, prelude::*};
 use leptos_use::math::use_not;
 
 use crate::{
@@ -17,6 +17,7 @@ pub fn Meal(meal: MealWithIngredients) -> impl IntoView {
     let meal = RwSignal::new(meal);
     let update_completed = RwSignal::new(true);
     let show_update = use_not(update_completed);
+    let show_full = RwSignal::new(false);
     // let meal_clone = meal.clone();
     view! {
         <Show when=move || !deleted.get() fallback=|| view! {}>
@@ -50,13 +51,14 @@ pub fn Meal(meal: MealWithIngredients) -> impl IntoView {
                 </span>
                 // </A>
                 {move || {
-                    let meal = meal.read();
-                    let meal_id = meal.meal.id.clone();
+                    let meal = &meal.read().meal;
+                    let meal_id = meal.id.clone();
+                    let meal_name = meal.name.clone();
                     view! {
                         <span
                             class="absolute top-2 right-2 z-10"
                             title="Delete day"
-                            on:click= move |_| {
+                            on:click=move |_| {
                                 set_deleted.set(true);
                                 delete_meal_action.dispatch(meal_id);
                             }
@@ -76,45 +78,101 @@ pub fn Meal(meal: MealWithIngredients) -> impl IntoView {
                                 />
                             </svg>
                         </span>
-
-                        // Header
                         <div class="p-4 border-b border-gray-200 dark:border-gray-700">
                             <h5 class="text-xl font-bold text-blue-700 dark:text-blue-400 font-underline">
-                                {meal.meal.name.clone()}
+                                {meal_name}
                             </h5>
                         </div>
-                        // Image
-                        <img
-                            class="w-full h-48 object-cover rounded-b-none rounded-t-lg"
-                            src=meal.meal.image.clone()
-                            alt=meal.meal.name.clone()
-                        />
-                        // Footer: Ingredients
-                        <div class="p-4 border-t border-gray-200 dark:border-gray-700 mt-auto">
-                            <h6 class="text-md font-semibold text-gray-900 dark:text-white mb-2">
-                                Ingredients
-                            </h6>
-                            <div class="flex flex-wrap gap-1">
-                                {meal
-                                    .ingredients
-                                    .clone()
-                                    .into_iter()
-                                    .map(|ingredient| {
-                                        view! {
-                                            <button
-                                                type="button"
-                                                class="px-3 py-2 rounded-full font-semibold transition text-white bg-blue-500"
-                                            >
-                                                {ingredient.name.clone()}
-                                                <span class="ml-2 text-xs font-normal text-gray-800 bg-gray-200 dark:bg-gray-700 dark:text-gray-100 px-2 py-1 rounded">
-                                                    {ingredient.amount}
-                                                </span>
-                                            </button>
-                                        }
-                                    })
-                                    .collect::<Vec<_>>()}
-                            </div>
-                        </div>
+                    }
+                }}
+                {move || {
+                    match show_full.get() {
+                        true => {
+                            Either::Left({
+                                let meal = meal.read();
+
+                                view! {
+                                    // Header
+                                    // Image
+                                    <img
+                                        class="w-full h-48 object-cover rounded-b-none rounded-t-lg"
+                                        src=meal.meal.image.clone()
+                                        alt=meal.meal.name.clone()
+                                    />
+                                    // Footer: Ingredients
+                                    <div class="p-4 border-t border-gray-200 dark:border-gray-700 mt-auto">
+                                        <h6 class="text-md font-semibold text-gray-900 dark:text-white mb-2">
+                                            Ingredients
+                                        </h6>
+                                        <div class="flex flex-wrap gap-1">
+                                            {meal
+                                                .ingredients
+                                                .clone()
+                                                .into_iter()
+                                                .map(|ingredient| {
+                                                    view! {
+                                                        <button
+                                                            type="button"
+                                                            class="px-3 py-2 rounded-full font-semibold transition text-white bg-blue-500"
+                                                        >
+                                                            {ingredient.name.clone()}
+                                                            <span class="ml-2 text-xs font-normal text-gray-800 bg-gray-200 dark:bg-gray-700 dark:text-gray-100 px-2 py-1 rounded">
+                                                                {ingredient.amount}
+                                                            </span>
+                                                        </button>
+                                                    }
+                                                })
+                                                .collect::<Vec<_>>()}
+                                        </div>
+                                    </div>
+                                    <button
+                                        on:click=move |_| show_full.set(false)
+                                        class="flex justify-center items-center"
+                                    >
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke-width="1.5"
+                                            stroke="currentColor"
+                                            class="size-8 text-blue-500"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                d="m4.5 15.75 7.5-7.5 7.5 7.5"
+                                            />
+                                        </svg>
+                                    </button>
+                                }
+                            })
+                        }
+                        false => {
+                            Either::Right({
+                                view! {
+                                    <button
+                                        on:click=move |_| show_full.set(true)
+                                        class="flex justify-center items-center"
+                                    >
+
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke-width="1.5"
+                                            stroke="currentColor"
+                                            class="size-8 text-blue-500"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                d="m19.5 8.25-7.5 7.5-7.5-7.5"
+                                            />
+                                        </svg>
+                                    </button>
+                                }
+                            })
+                        }
                     }
                 }}
             </div>

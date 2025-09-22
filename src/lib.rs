@@ -4,6 +4,7 @@ pub mod api;
 pub mod utils;
 
 mod components;
+pub mod routes;
 
 #[cfg(feature = "ssr")]
 pub mod schema;

@@ -11,10 +11,10 @@ async fn get_image_url(image: String, name: String) -> Result<String, ServerFnEr
 }
 
 #[server]
-pub async fn get_meals() -> Result<Vec<Meal>, ServerFnError> {
+pub async fn get_meals_ordered() -> Result<Vec<Meal>, ServerFnError> {
     use crate::api::ssr::*;
     let db = &mut get_db()?;
-    server_err!(Meal::get_all(db), "Could not get meals")
+    server_err!(Meal::get_all_ordered(db), "Could not get meals")
 }
 
 #[server]
@@ -94,7 +94,7 @@ pub async fn get_all_meals_with_ingredients() -> Result<Vec<MealWithIngredients>
     use crate::api::ingredient::get_ingredients;
     use crate::api::ssr::*;
     let db = &mut get_db()?;
-    let meals = get_meals().await?;
+    let meals = get_meals_ordered().await?;
     let ingredients = get_ingredients(db)?;
     Ok(ingredients
         .grouped_by(&meals)

@@ -20,15 +20,21 @@ pub mod js {
 
     // ----------- Permission Helpers -----------
 
-    pub fn request_notification_permission() {
+    pub fn request_notification_permission<A>(callback: A)
+    where
+        A: Fn(NotificationPermission) + 'static,
+    {
         // Call Notification.requestPermission()
         if has_notification_api() {
-            spawn_local(async {
-                match Notification::request_permission() {
-                    Ok(promise) => {
-                        let _ = JsFuture::from(promise).await;
+            spawn_local(async move {
+                if let Ok(promise) = Notification::request_permission() {
+                    if let Ok(perm) = JsFuture::from(promise).await {
+                        match perm.as_string().as_deref() {
+                            Some("granted") => callback(NotificationPermission::Granted),
+                            Some("denied") => callback(NotificationPermission::Denied),
+                            _ => callback(NotificationPermission::Default),
+                        };
                     }
-                    Err(_) => {}
                 }
             });
         }
@@ -95,6 +101,7 @@ pub mod js {
 #[cfg(not(feature = "hydrate"))]
 pub mod js {
     use crate::components::csr::NotificationStatus;
+    use web_sys::NotificationPermission;
 
     pub fn set_badge(_: usize) {}
 
@@ -103,5 +110,5 @@ pub mod js {
     pub fn check_notification_permission() -> NotificationStatus {
         NotificationStatus::NotAvailable
     }
-    pub fn request_notification_permission() {}
+    pub fn request_notification_permission<T: Fn(NotificationPermission) + 'static>(_: T) {}
 }

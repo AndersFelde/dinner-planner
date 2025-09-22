@@ -1,4 +1,4 @@
-use crate::api::meal::get_meals;
+use crate::api::meal::get_meals_ordered;
 use crate::components::forms::day_form::DayForm;
 use crate::components::forms::meal_form::CreateMealForm;
 use crate::components::models::ingredient::DayIngredient;
@@ -39,7 +39,7 @@ pub fn Day(day: DayWithMealAndIngredients) -> impl IntoView {
     let create_meal_completed = RwSignal::new(true);
     let show_create_meal = RwSignal::new(false);
     let new_meal: RwSignal<Option<MealWithIngredients>> = RwSignal::new(None);
-    let meals_resource = OnceResource::new(get_meals());
+    let meals_resource = OnceResource::new(get_meals_ordered());
     let meals: RwSignal<Vec<Meal>> = RwSignal::new(Vec::new());
 
     Effect::watch(

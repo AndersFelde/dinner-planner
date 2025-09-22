@@ -25,3 +25,4 @@ test-db.sqlite3-wal
 db.sqlite3-shm
 db.sqlite3-wal
 rustc-ice*.txt
+recipe.json
