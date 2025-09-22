@@ -54,6 +54,7 @@ impl Meal {
         use diesel::dsl::sql;
         meals::table
             .select(Meal::as_select())
+            // Hacky but to make it case insensitive
             .order(sql::<diesel::sql_types::Text>("name COLLATE NOCASE ASC"))
             // .order(meals::name.desc())
             .load(db)
