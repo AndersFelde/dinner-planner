@@ -3,7 +3,7 @@ use crate::components::error_list;
 use crate::models::day::DayForm;
 use crate::models::days_ingredients::DayWithMealAndIngredients;
 use crate::models::meal::Meal;
-use chrono::{Datelike, NaiveDate};
+use chrono::Datelike;
 use leptos::html::{Div, Input};
 use leptos::prelude::*;
 use leptos_use::{on_click_outside_with_options, OnClickOutsideOptions};

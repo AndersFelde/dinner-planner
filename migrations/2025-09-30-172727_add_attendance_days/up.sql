@@ -1,0 +1,9 @@
+-- Your SQL goes here
+ALTER TABLE days
+    ADD COLUMN anders_attend BOOLEAN NOT NULL DEFAULT 1;
+
+ALTER TABLE days
+    ADD COLUMN ac_attend BOOLEAN NOT NULL DEFAULT 1;
+
+ALTER TABLE days
+    ADD COLUMN andreas_attend BOOLEAN NOT NULL DEFAULT 1;

@@ -7,6 +7,9 @@ diesel::table! {
         meal_id -> Nullable<Integer>,
         week -> Integer,
         year -> Integer,
+        anders_attend -> Bool,
+        ac_attend -> Bool,
+        andreas_attend -> Bool,
     }
 }
 

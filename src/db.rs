@@ -61,8 +61,6 @@ pub fn run_migrations(
 #[cfg(feature = "ssr")]
 #[cfg(test)]
 pub mod tests {
-    use crate::models::ingredient::IngredientForm;
-
     use super::*;
     use once_cell::sync::Lazy;
     use std::sync::Arc;

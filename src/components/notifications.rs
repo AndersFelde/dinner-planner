@@ -1,6 +1,5 @@
 use chrono::Datelike;
 use chrono::Local;
-use leptos::logging::log;
 use leptos::prelude::*;
 use leptos::IntoView;
 use reactive_stores::Store;
@@ -18,11 +17,11 @@ use crate::components::csr::NotificationStatus;
 
 #[component]
 pub fn Notifications() -> impl IntoView {
-    // TODO: make it initially set the badge count based on live data
-    let has_permissions = RwSignal::new(match check_notification_permission(){
-        NotificationStatus::Granted | NotificationStatus::NotAvailable => true,
-        _ => false
-
+    let has_permissions = RwSignal::new(true);
+    // This is a hack to avoid hydration bugs because server cant check permissions beforehand
+    Effect::new(move |_| match check_notification_permission() {
+        NotificationStatus::Granted | NotificationStatus::NotAvailable => has_permissions.set(true),
+        _ => has_permissions.set(false),
     });
     let state = expect_context::<Store<GlobalState>>();
     let extra_items_count = state.extra_items_count();

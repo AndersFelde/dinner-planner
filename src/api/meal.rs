@@ -154,7 +154,6 @@ mod utils {
 #[cfg(feature = "ssr")]
 #[cfg(test)]
 mod test {
-    use super::*;
     use crate::db::tests::TEST_POOL;
     use crate::models::meal::{Meal, MealForm};
     use diesel::Connection;

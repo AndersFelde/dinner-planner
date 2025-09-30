@@ -1,7 +1,7 @@
 use crate::models::{
-        day::{Day, DayForm},
-        days_ingredients::DayWithMealAndIngredients,
-    };
+    day::{Day, DayForm},
+    days_ingredients::DayWithMealAndIngredients,
+};
 use leptos::prelude::*;
 
 #[server]
@@ -21,11 +21,26 @@ pub async fn get_days_for_meal(meal_id: i32) -> Result<Vec<Day>, ServerFnError> 
 }
 
 #[server]
+pub async fn update_attendance_for_day(
+    id: i32,
+    anders_attend: bool,
+    ac_attend: bool,
+    andreas_attend: bool,
+) -> Result<usize, ServerFnError> {
+    use crate::api::ssr::*;
+    let db = &mut get_db()?;
+    server_err!(
+        Day::update_attendance(db, id, anders_attend, ac_attend, andreas_attend),
+        "Could not update attendance for day {id}: ({anders_attend}, {ac_attend}, {andreas_attend})"
+    )
+}
+
+#[server]
 pub async fn upsert_day(day_form: DayForm) -> Result<DayWithMealAndIngredients, ServerFnError> {
     use crate::api::days_ingredients::{delete_day_ingredient_for_day, insert_day_ingredient};
     use crate::api::ingredient::get_ingredients_for_meal;
-    use crate::models::days_ingredients::IngredientWithBought;
     use crate::api::ssr::*;
+    use crate::models::days_ingredients::IngredientWithBought;
     let db = &mut get_db()?;
     let day = server_err!(
         day_form.upsert(db),
@@ -84,7 +99,32 @@ mod test {
                 year: day.year(),
             }.upsert(db), Err(diesel::result::Error::DatabaseError(diesel::result::DatabaseErrorKind::ForeignKeyViolation, ref info)) if info.message() == "FOREIGN KEY constraint failed" ));
         Ok(())
-    });
+        });
+    }
+
+    #[test]
+    pub fn test_update_attendance() {
+        let day = Local::now();
+        let db = &mut TEST_POOL.clone().get().unwrap();
+        db.test_transaction(|db| -> Result<(), ()> {
+            let day = DayForm {
+                date: day.date_naive(),
+                meal_id: None,
+                week: day.iso_week().week() as i32,
+                year: day.year(),
+            }
+            .upsert(db)
+            .unwrap();
+            assert_eq!(day.anders_attend, true);
+            assert_eq!(day.ac_attend, true);
+            assert_eq!(day.andreas_attend, true);
+            Day::update_attendance(db, day.id, false, false, false).unwrap();
+            let day = Day::get(db, day.id).unwrap();
+            assert_eq!(day.anders_attend, false);
+            assert_eq!(day.ac_attend, false);
+            assert_eq!(day.andreas_attend, false);
+            Ok(())
+        });
     }
     #[test]
     fn test_get_days_for_meal() {
@@ -129,7 +169,7 @@ mod test {
         });
     }
     #[test]
-    fn test_usert_day() {
+    fn test_upsert_day() {
         let db = &mut TEST_POOL.clone().get().unwrap();
         db.test_transaction(|db| -> Result<(), ()> {
             let week = Week::current();
@@ -152,6 +192,9 @@ mod test {
                 assert_eq!(day.week, (dates[i].iso_week().week()) as i32);
                 assert_eq!(day.year, dates[i].year());
                 assert_eq!(day.meal_id, None);
+                assert_eq!(day.anders_attend, true);
+                assert_eq!(day.ac_attend, true);
+                assert_eq!(day.andreas_attend, true);
             }
 
             for (i, day) in dates.iter().enumerate() {

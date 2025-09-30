@@ -3,6 +3,7 @@ pub mod models;
 pub mod csr;
 pub mod notifications;
 pub mod modal;
+pub mod buttons;
 
 use leptos::prelude::*;
 

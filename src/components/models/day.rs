@@ -1,10 +1,11 @@
 use crate::api::meal::get_meals_ordered;
+use crate::components::buttons::attendance::Attendance;
 use crate::components::forms::day_form::DayForm;
 use crate::components::forms::meal_form::CreateMealForm;
+use crate::components::modal::Modal;
 use crate::components::models::ingredient::DayIngredient;
 use crate::models::days_ingredients::DayWithMealAndIngredients;
 use crate::models::meal::{Meal, MealWithIngredients};
-use crate::components::modal::Modal;
 use chrono::{Datelike, Local};
 use leptos::{either::Either, html::Div, prelude::*};
 use leptos_use::math::use_not;
@@ -185,6 +186,9 @@ pub fn Day(day: DayWithMealAndIngredients) -> impl IntoView {
                                             .collect::<Vec<_>>()}
                                     </div>
                                 </div>
+                                <div class="border-t border-gray-200 dark:border-gray-700 flex justify-center items-center flex-nowrap gap-3 py-1">
+                                    <Attendance day=&day.day />
+                                </div>
                             </div>
                         },
                     )
@@ -226,7 +230,9 @@ pub fn Day(day: DayWithMealAndIngredients) -> impl IntoView {
                                         </svg>
                                     </button>
                                 </div>
-                            // Footer: Ingredients (empty)
+                            <div class="border-t border-gray-200 dark:border-gray-700 flex justify-center items-center flex-nowrap gap-3 py-1">
+                                <Attendance day=&day.day />
+                            </div>
                             </div>
                         },
                     )

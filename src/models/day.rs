@@ -42,6 +42,9 @@ pub struct Day {
     pub meal_id: Option<i32>,
     pub week: i32,
     pub year: i32,
+    pub anders_attend: bool,
+    pub ac_attend: bool,
+    pub andreas_attend: bool,
 }
 
 #[cfg(feature = "ssr")]
@@ -53,8 +56,18 @@ impl Day {
         days::table.select(Day::as_select()).load(db)
     }
 
-    pub fn get_for_meal(db: &mut DbConn, id: i32) -> Result<Vec<Day>, Error>{
+    pub fn get_for_meal(db: &mut DbConn, id: i32) -> Result<Vec<Day>, Error> {
         days::table.filter(days::meal_id.eq(id)).load(db)
     }
 
+    pub fn update_attendance(db: &mut DbConn, id: i32, anders_attend: bool, ac_attend: bool, andreas_attend: bool) -> Result<usize, Error> {
+        update(days::table)
+            .filter(days::id.eq(id))
+            .set((
+                days::anders_attend.eq(anders_attend),
+                days::ac_attend.eq(ac_attend),
+                days::andreas_attend.eq(andreas_attend),
+            ))
+            .execute(db)
+    }
 }
