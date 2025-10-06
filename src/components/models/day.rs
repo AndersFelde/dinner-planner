@@ -14,12 +14,12 @@ use web_sys::ScrollIntoViewOptions;
 #[component]
 pub fn Day(day: DayWithMealAndIngredients) -> impl IntoView {
     let today = Local::now().date_naive();
-    let node_ref = NodeRef::<Div>::new();
+    let scroll_div_ref = NodeRef::<Div>::new();
     let is_today = today == day.day.date;
     if is_today {
         // TODO: this does not work when navigating back to a page
         Effect::new(move || {
-            if let Some(node) = node_ref.get() {
+            if let Some(node) = scroll_div_ref.get() {
                 let options = ScrollIntoViewOptions::new();
                 options.set_behavior(web_sys::ScrollBehavior::Auto);
                 options.set_block(web_sys::ScrollLogicalPosition::Center);
@@ -104,7 +104,7 @@ pub fn Day(day: DayWithMealAndIngredients) -> impl IntoView {
                             <div
                                 id=format!("day-{}", day.day.id)
                                 class=card_classes
-                                node_ref=node_ref
+                                node_ref=scroll_div_ref
                             >
 
                                 <span
@@ -199,8 +199,7 @@ pub fn Day(day: DayWithMealAndIngredients) -> impl IntoView {
                             <div
                                 id=format!("day-{}", day.day.id)
                                 class=card_classes
-                                node_ref=node_ref
-                                on:click=move |_| update_completed.set(false)
+                                node_ref=scroll_div_ref
                             >
                                 // Header
                                 <div class="p-4 border-b border-gray-200 dark:border-gray-700">
@@ -209,7 +208,10 @@ pub fn Day(day: DayWithMealAndIngredients) -> impl IntoView {
                                     </h4>
                                 </div>
                                 // Image area with big "+" button
-                                <div class="w-full h-48 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-b-none rounded-t-lg">
+                                <div
+                                    class="w-full h-48 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-b-none rounded-t-lg"
+                                    on:click=move |_| update_completed.set(false)
+                                >
                                     <button
                                         class="text-6xl text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-colors bg-white dark:bg-gray-900 rounded-full w-20 h-20 flex items-center justify-center shadow-lg border-2 border-gray-300 dark:border-gray-700"
                                         title="Add meal"
@@ -230,9 +232,9 @@ pub fn Day(day: DayWithMealAndIngredients) -> impl IntoView {
                                         </svg>
                                     </button>
                                 </div>
-                            <div class="border-t border-gray-200 dark:border-gray-700 flex justify-center items-center flex-nowrap gap-3 py-1">
-                                <Attendance day=&day.day />
-                            </div>
+                                <div class="border-t border-gray-200 dark:border-gray-700 flex justify-center items-center flex-nowrap gap-3 py-1">
+                                    <Attendance day=&day.day />
+                                </div>
                             </div>
                         },
                     )

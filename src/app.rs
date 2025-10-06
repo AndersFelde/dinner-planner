@@ -1,6 +1,4 @@
-use crate::components::{
-    notifications::Notifications
-};
+use crate::components::notifications::Notifications;
 use crate::routes::{meal_list::MealList, shopping_list::ShoppingList, week::Week};
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
@@ -8,7 +6,6 @@ use leptos_router::{
     components::{Route, Router, Routes, ToHref},
     path,
 };
-
 
 use reactive_stores::Store;
 
@@ -65,7 +62,10 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
                 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
                 <meta name="apple-mobile-web-app-title" content="Dinner for three" />
                 // Disable auto zoom on input for ios
-                <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/> 
+                <meta
+                    name="viewport"
+                    content="width=device-width, initial-scale=1, maximum-scale=1"
+                />
 
                 <link rel="apple-touch-icon" href="https://i.ibb.co/5XS4mWSy/icon.png" />
                 <link rel="manifest" href="/manifest.json" />
