@@ -73,8 +73,8 @@ pub async fn upsert_day(day_form: DayForm) -> Result<DayWithMealAndIngredients, 
         ));
     }
     Ok(DayWithMealAndIngredients {
-        day: day,
-        meal: meal,
+        day,
+        meal,
     })
 }
 
@@ -115,14 +115,14 @@ mod test {
             }
             .upsert(db)
             .unwrap();
-            assert_eq!(day.anders_attend, true);
-            assert_eq!(day.ac_attend, true);
-            assert_eq!(day.andreas_attend, true);
+            assert!(day.anders_attend);
+            assert!(day.ac_attend);
+            assert!(day.andreas_attend);
             Day::update_attendance(db, day.id, false, false, false).unwrap();
             let day = Day::get(db, day.id).unwrap();
-            assert_eq!(day.anders_attend, false);
-            assert_eq!(day.ac_attend, false);
-            assert_eq!(day.andreas_attend, false);
+            assert!(!day.anders_attend);
+            assert!(!day.ac_attend);
+            assert!(!day.andreas_attend);
             Ok(())
         });
     }
@@ -192,14 +192,14 @@ mod test {
                 assert_eq!(day.week, (dates[i].iso_week().week()) as i32);
                 assert_eq!(day.year, dates[i].year());
                 assert_eq!(day.meal_id, None);
-                assert_eq!(day.anders_attend, true);
-                assert_eq!(day.ac_attend, true);
-                assert_eq!(day.andreas_attend, true);
+                assert!(day.anders_attend);
+                assert!(day.ac_attend);
+                assert!(day.andreas_attend);
             }
 
             for (i, day) in dates.iter().enumerate() {
                 DayForm {
-                    date: day.clone(),
+                    date: *day,
                     meal_id: None,
                     week: day.iso_week().week() as i32 + i as i32,
                     year: day.year() + i as i32,

@@ -1,4 +1,5 @@
 use crate::components::notifications::Notifications;
+use crate::routes::receipt::Receipt;
 use crate::routes::{meal_list::MealList, shopping_list::ShoppingList, week::Week};
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
@@ -20,6 +21,7 @@ pub enum RouteUrl {
     Home,
     MealList,
     ShoppingList,
+    Receipt,
 }
 impl RouteUrl {
     fn as_path(&self) -> String {
@@ -27,6 +29,7 @@ impl RouteUrl {
             RouteUrl::Home => "/".to_string(),
             RouteUrl::MealList => "/meals".to_string(),
             RouteUrl::ShoppingList => "/shopping-list".to_string(),
+            RouteUrl::Receipt => "/receipt".to_string(),
         }
     }
 
@@ -99,6 +102,7 @@ pub fn App() -> impl IntoView {
                     <Route path=path!("/") view=Week />
                     <Route path=path!("/shopping-list") view=ShoppingList />
                     <Route path=path!("/meals") view=MealList />
+                    <Route path=path!("/receipt") view=Receipt />
 
                 </Routes>
             </main>

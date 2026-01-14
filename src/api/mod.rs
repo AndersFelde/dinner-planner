@@ -4,6 +4,7 @@ pub mod ingredient;
 pub mod days_ingredients;
 pub mod week;
 pub mod extra_items;
+pub mod receipt;
 
 #[macro_export]
 macro_rules! server_err {

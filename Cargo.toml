@@ -7,7 +7,7 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-leptos = { version = "0.8.0", features = ["nightly"] }
+leptos = { version = "0.8.0", features = ["nightly", "multipart"] }
 leptos_router = { version = "0.8.0", features = ["nightly"] }
 axum = { version = "0.8.0", optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
@@ -17,10 +17,10 @@ tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
 wasm-bindgen = { version = "=0.2.101", optional = true }
 chrono = { version = "0.4.41", features = ["serde"] }
 diesel = { version = "2.2.12", features = [
-    "sqlite",
-    "returning_clauses_for_sqlite_3_35",
-    "chrono",
-    "r2d2",
+  "sqlite",
+  "returning_clauses_for_sqlite_3_35",
+  "chrono",
+  "r2d2",
 ], optional = true }
 dotenvy = { version = "0.15.7", optional = true }
 serde = "1.0.219"
@@ -33,42 +33,47 @@ diesel_migrations = { version = "2.3.0", optional = true }
 once_cell = { version = "1.21.3", optional = true }
 leptos-use = { version = "0.16.2", features = ["math"] }
 reactive_stores = "0.2.5"
+serde_json = { version = "1.0.149", optional = true }
+tempfile = { version = "3.24.0", optional = true }
 
 [dependencies.web-sys]
 version = "0.3"
 features = [
-    "ScrollIntoViewOptions",
-    "ScrollBehavior",
-    "ScrollLogicalPosition",
-    "NotificationPermission",
-    "Navigator",
-    "Permissions",
-    "Notification",
+  "ScrollIntoViewOptions",
+  "ScrollBehavior",
+  "ScrollLogicalPosition",
+  "NotificationPermission",
+  "Navigator",
+  "Permissions",
+  "Notification",
 ]
 
 [features]
 hydrate = [
-    "leptos/hydrate",
-    "dep:console_error_panic_hook",
-    "dep:wasm-bindgen",
-    "dep:wasm-bindgen-futures",
-    "dep:js-sys",
+  "leptos/hydrate",
+  "dep:console_error_panic_hook",
+  "dep:wasm-bindgen",
+  "dep:wasm-bindgen-futures",
+  "dep:js-sys",
 ]
 ssr = [
-    "dep:axum",
-    "dep:tokio",
-    "dep:leptos_axum",
-    "dep:diesel",
-    "dep:diesel_migrations",
-    "dep:dotenvy",
-    "dep:reqwest",
-    "dep:urlencoding",
-    "dep:url",
-    "dep:once_cell",
-    "leptos/ssr",
-    "leptos_meta/ssr",
-    "leptos_router/ssr",
-    "leptos-use/ssr",
+  "dep:axum",
+  "dep:tokio",
+  "dep:leptos_axum",
+  "dep:diesel",
+  "dep:diesel_migrations",
+  "dep:dotenvy",
+  "dep:reqwest",
+  "dep:urlencoding",
+  "dep:url",
+  "dep:once_cell",
+  "dep:serde_json",
+  "dep:tempfile",
+  "leptos/ssr",
+  "leptos/multipart",
+  "leptos_meta/ssr",
+  "leptos_router/ssr",
+  "leptos-use/ssr",
 ]
 reqwest = ["dep:reqwest"]
 urlencoding = ["dep:urlencoding"]
@@ -76,6 +81,8 @@ url = ["dep:url"]
 wasm-bindgen-futures = ["dep:wasm-bindgen-futures"]
 diesel_migrations = ["dep:diesel_migrations"]
 once_cell = ["dep:once_cell"]
+serde_json = ["dep:serde_json"]
+tempfile = ["dep:tempfile"]
 
 # Defines a size-optimized profile for the WASM bundle in release mode
 [profile.wasm-release]

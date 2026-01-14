@@ -10,9 +10,8 @@ pub mod db;
 #[cfg(feature = "ssr")]
 pub mod api;
 
-
 #[cfg(feature = "ssr")]
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 async fn main() {
     use axum::Router;
     use dinner_planner::app::*;

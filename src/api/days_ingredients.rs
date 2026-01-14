@@ -83,14 +83,14 @@ mod test {
             let ingredient_id = IngredientForm {
                 amount: 0,
                 name: String::new(),
-                meal_id: meal_id,
+                meal_id,
             }
             .insert(db)
             .unwrap()
             .id;
             let mut di = DayIngredient {
-                day_id: day_id,
-                ingredient_id: ingredient_id,
+                day_id,
+                ingredient_id,
                 bought: false,
             }
             .insert(db)
@@ -98,14 +98,14 @@ mod test {
             let ingredient_id = IngredientForm {
                 amount: 0,
                 name: String::new(),
-                meal_id: meal_id,
+                meal_id,
             }
             .insert(db)
             .unwrap()
             .id;
             let other_di = DayIngredient {
-                day_id: day_id,
-                ingredient_id: ingredient_id,
+                day_id,
+                ingredient_id,
                 bought: false,
             }
             .insert(db)
@@ -114,8 +114,8 @@ mod test {
             di.bought = true;
             let di = di.update(db).unwrap();
 
-            assert_eq!(di.bought, true);
-            assert_eq!(other_di.bought, false);
+            assert!(di.bought);
+            assert!(!other_di.bought);
 
             assert_eq!(DayIngredient::get_all(db).unwrap().len(), 2);
 

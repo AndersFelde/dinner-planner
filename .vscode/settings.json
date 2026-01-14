@@ -3,7 +3,7 @@
         "leptos_macro": [
             // optional:
             // "component",
-            "server"
+            // "server"
         ],
     },
     "rust-analyzer.cargo.features": "all",
