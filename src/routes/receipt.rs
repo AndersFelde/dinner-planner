@@ -1,9 +1,14 @@
-use crate::{app::RouteUrl, components::forms::receipt_upload_form::ReceiptUpload};
+use crate::{
+    app::RouteUrl,
+    components::{forms::receipt_upload_form::ReceiptUpload, models::receipt::Receipt},
+    models::receipt::ReceiptWithItems,
+};
 use leptos::prelude::*;
 use leptos_router::components::A;
 
 #[component]
-pub fn Receipt() -> impl IntoView {
+pub fn ReceiptRoute() -> impl IntoView {
+    let receipt: RwSignal<Option<ReceiptWithItems>> = RwSignal::new(None);
     view! {
         <A href=RouteUrl::Home.to_string()>
             <button
@@ -30,7 +35,14 @@ pub fn Receipt() -> impl IntoView {
         </A>
 
         <div class="w-80 mx-auto">
-            <ReceiptUpload />
+            <ReceiptUpload receipt />
         </div>
+        <Show when=move || { receipt.read().is_some() } fallback=|| view! {}>
+            {move || {
+                let receipt = receipt.get().unwrap();
+                view! { <Receipt receipt_with_items=&receipt /> }
+            }}
+
+        </Show>
     }
 }

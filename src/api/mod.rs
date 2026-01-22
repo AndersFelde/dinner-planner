@@ -19,7 +19,7 @@ pub mod ssr {
     pub use crate::models::{
         day::Day, days_ingredients::DayIngredient, ingredient::Ingredient, meal::Meal,
     };
-    pub use crate::schema::{days, days_ingredients, ingredients, meals, extra_items};
+    pub use crate::schema::{days, days_ingredients, ingredients, meals, extra_items, receipts, receipt_items};
     pub use crate::server_err;
     pub use diesel::dsl::{delete, insert_into, update};
     pub use diesel::prelude::*;

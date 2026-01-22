@@ -1,5 +1,5 @@
 use crate::components::notifications::Notifications;
-use crate::routes::receipt::Receipt;
+use crate::routes::receipt::ReceiptRoute;
 use crate::routes::{meal_list::MealList, shopping_list::ShoppingList, week::Week};
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
@@ -102,7 +102,7 @@ pub fn App() -> impl IntoView {
                     <Route path=path!("/") view=Week />
                     <Route path=path!("/shopping-list") view=ShoppingList />
                     <Route path=path!("/meals") view=MealList />
-                    <Route path=path!("/receipt") view=Receipt />
+                    <Route path=path!("/receipt") view=ReceiptRoute />
 
                 </Routes>
             </main>

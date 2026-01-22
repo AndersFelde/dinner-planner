@@ -48,10 +48,38 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    receipt_days (receipt_id, day_id) {
+        receipt_id -> Integer,
+        day_id -> Integer,
+    }
+}
+
+diesel::table! {
+    receipt_items (id) {
+        id -> Integer,
+        receipt_id -> Integer,
+        name -> Text,
+        price -> Float,
+    }
+}
+
+diesel::table! {
+    receipts (id) {
+        id -> Integer,
+        store -> Text,
+        total -> Float,
+        datetime -> Timestamp,
+    }
+}
+
 diesel::joinable!(days -> meals (meal_id));
 diesel::joinable!(days_ingredients -> days (day_id));
 diesel::joinable!(days_ingredients -> ingredients (ingredient_id));
 diesel::joinable!(ingredients -> meals (meal_id));
+diesel::joinable!(receipt_days -> days (day_id));
+diesel::joinable!(receipt_days -> receipts (receipt_id));
+diesel::joinable!(receipt_items -> receipts (receipt_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     days,
@@ -59,4 +87,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     extra_items,
     ingredients,
     meals,
+    receipt_days,
+    receipt_items,
+    receipts,
 );
