@@ -17,7 +17,7 @@ macro_rules! server_err {
 pub mod ssr {
     pub use crate::db::*;
     pub use crate::models::{
-        day::Day, days_ingredients::DayIngredient, ingredient::Ingredient, meal::Meal,
+        day::Day, days_ingredients::DayIngredient, ingredient::Ingredient, meal::Meal, receipt::Receipt
     };
     pub use crate::schema::{days, days_ingredients, ingredients, meals, extra_items, receipts, receipt_items};
     pub use crate::server_err;

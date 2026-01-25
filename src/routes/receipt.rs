@@ -1,7 +1,10 @@
 use crate::{
     app::RouteUrl,
-    components::{forms::receipt_upload_form::ReceiptUpload, models::receipt::Receipt},
-    models::receipt::ReceiptWithItems,
+    components::{
+        forms::receipt_form::ReceiptForm, forms::receipt_upload_form::ReceiptUpload,
+        models::receipt::Receipt,
+    },
+    models::receipt::{ReceiptForm, ReceiptItemForm, ReceiptWithItems},
 };
 use leptos::prelude::*;
 use leptos_router::components::A;
@@ -9,6 +12,9 @@ use leptos_router::components::A;
 #[component]
 pub fn ReceiptRoute() -> impl IntoView {
     let receipt: RwSignal<Option<ReceiptWithItems>> = RwSignal::new(None);
+    let receipt_completed: RwSignal<bool> = RwSignal::new(false);
+    let receipt_form: RwSignal<Option<ReceiptForm>> = RwSignal::new(None);
+    let receipt_items_forms: RwSignal<Option<Vec<ReceiptItemForm>>> = RwSignal::new(None);
     view! {
         <A href=RouteUrl::Home.to_string()>
             <button
@@ -35,12 +41,36 @@ pub fn ReceiptRoute() -> impl IntoView {
         </A>
 
         <div class="w-80 mx-auto">
-            <ReceiptUpload receipt />
+            <ReceiptUpload receipt_form receipt_items_forms />
         </div>
-        <Show when=move || { receipt.read().is_some() } fallback=|| view! {}>
+        <Show
+            when=move || { !receipt_completed.get() && (receipt_form.read().is_some() && receipt_items_forms.read().is_some()) }
+            fallback=|| view! {}
+        >
+            {move || {
+                view! {
+                    <ReceiptForm
+                        receipt
+                        completed=receipt_completed.write_only()
+                        receipt_form=receipt_form.read().as_ref().unwrap().clone()
+                        receipt_items_forms=receipt_items_forms.read().as_ref().unwrap().clone()
+                    />
+                }
+            }}
+
+        </Show>
+
+        <Show
+            when=move || { receipt.read().is_some() }
+            fallback=|| view! {}
+        >
             {move || {
                 let receipt = receipt.get().unwrap();
-                view! { <Receipt receipt_with_items=&receipt /> }
+                view! {
+                    <Receipt
+                        receipt_with_items = &receipt
+                    />
+                }
             }}
 
         </Show>

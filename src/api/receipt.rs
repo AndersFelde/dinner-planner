@@ -58,7 +58,13 @@ fn ocr_image(image_path: &str, db: &mut super::ssr::DbConn) -> Result<Vec<Vec<St
 #[server(input = MultipartFormData)]
 pub async fn scan_receipt(
     data: MultipartData,
-) -> Result<crate::models::receipt::ReceiptWithItems, ServerFnError> {
+) -> Result<
+    (
+        crate::models::receipt::ReceiptForm,
+        Vec<crate::models::receipt::ReceiptItemForm>,
+    ),
+    ServerFnError,
+> {
     use crate::api::ssr::*;
     use leptos::logging::log;
     use tempfile::Builder;
@@ -124,8 +130,8 @@ pub async fn scan_receipt(
         for words in lines {
             if let Some(price) = words.last() {
                 let price = price.replace(",", ".").replace(" ", "");
-                if !price.contains("."){
-                    continue
+                if !price.contains(".") {
+                    continue;
                 }
                 if let Ok(price) = price.parse::<f32>() {
                     let words = &words[..words.len() - 1];
@@ -151,30 +157,40 @@ pub async fn scan_receipt(
             store: store.to_owned(),
             total,
             datetime: chrono::Local::now().naive_local(),
-        }
-        .insert(db)?;
-
-        let receipt_id = receipt.id;
+        };
 
         let mut receipt_items = vec![];
         for (name, price) in items {
-            receipt_items.push(
-                ReceiptItemForm {
-                    receipt_id,
-                    name,
-                    price,
-                }
-                .insert(db)?,
-            );
+            receipt_items.push(ReceiptItemForm {
+                receipt_id: -1, // This is a temporary hack as we dont have the id yet. It will be set in `create_receipt_with_items`
+                name,
+                price,
+            });
         }
         // let _ = std::fs::remove_file(&final_path);
-        return Ok(ReceiptWithItems {
-            receipt,
-            items: receipt_items,
-        });
+        return Ok((receipt, receipt_items));
     }
 
     Err(ServerFnError::new("No image provided"))
+}
+
+#[server]
+pub async fn create_receipt_with_items(
+    receipt_form: ReceiptForm,
+    receipt_items_forms: Vec<ReceiptItemForm>,
+) -> Result<ReceiptWithItems, ServerFnError> {
+    use crate::api::ssr::*;
+    let db = &mut get_db()?;
+    let receipt: Receipt = server_err!(
+        receipt_form.insert(db),
+        "Could not insert receipt {receipt_form:?}"
+    )?;
+    let mut items = vec![];
+    for mut item_form in receipt_items_forms {
+        item_form.receipt_id = receipt.id;
+        items.push(server_err!(item_form.insert(db), "Could not insert receipt_item {item_form:?}")?);
+    }
+    Ok(ReceiptWithItems { receipt, items })
 }
 
 #[cfg(feature = "ssr")]

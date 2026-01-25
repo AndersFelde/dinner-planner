@@ -1,12 +1,12 @@
 use crate::api::receipt::scan_receipt;
 use crate::components::models::receipt::Receipt;
-use crate::models::receipt::ReceiptWithItems;
+use crate::models::receipt::{ReceiptForm, ReceiptItemForm, ReceiptWithItems};
 use leptos::prelude::*;
 use web_sys::wasm_bindgen::JsCast;
 use web_sys::{FormData, HtmlFormElement, SubmitEvent};
 
 #[component]
-pub fn ReceiptUpload(receipt: RwSignal<Option<ReceiptWithItems>>) -> impl IntoView {
+pub fn ReceiptUpload(receipt_form: RwSignal<Option<ReceiptForm>>, receipt_items_forms: RwSignal<Option<Vec<ReceiptItemForm>>>) -> impl IntoView {
     let upload_action = Action::new_local(|data: &FormData| {
         let data = data.clone();
         async move { scan_receipt(data.into()).await }
@@ -17,8 +17,9 @@ pub fn ReceiptUpload(receipt: RwSignal<Option<ReceiptWithItems>>) -> impl IntoVi
     let upload = upload_action.value();
 
     Effect::new(move || {
-        if let Some(Ok(new_receipt)) = upload_action.value().get() {
-            receipt.set(Some(new_receipt));
+        if let Some(Ok((new_receipt_form, new_items_forms))) = upload_action.value().get() {
+            receipt_form.set(Some(new_receipt_form));
+            receipt_items_forms.set(Some(new_items_forms));
         }
     });
 
@@ -44,6 +45,7 @@ pub fn ReceiptUpload(receipt: RwSignal<Option<ReceiptWithItems>>) -> impl IntoVi
                 <label class="block">
                     <span class="sr-only">Choose file</span>
                     <input
+                        required
                         type="file"
                         name="file_to_upload"
                         class="block w-full text-sm text-gray-700
