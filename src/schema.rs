@@ -61,6 +61,9 @@ diesel::table! {
         receipt_id -> Integer,
         name -> Text,
         price -> Float,
+        anders_pay -> Bool,
+        andreas_pay -> Bool,
+        ac_pay -> Bool,
     }
 }
 
@@ -68,7 +71,6 @@ diesel::table! {
     receipts (id) {
         id -> Integer,
         store -> Text,
-        total -> Float,
         datetime -> Timestamp,
     }
 }

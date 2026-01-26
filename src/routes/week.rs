@@ -39,7 +39,7 @@ pub fn Week() -> impl IntoView {
     };
 
     view! {
-        <A href=RouteUrl::Receipt.to_string()>
+        <A href=RouteUrl::ReceiptCreate.to_string()>
             <button
                 type="button"
                 class="fixed bottom-34 right-4 z-50 px-4 py-3 rounded-full bg-blue-500 text-white font-semibold text-base shadow-lg  focus:outline-none focus:ring-2  transition flex items-center justify-center whitespace-nowrap"

@@ -41,12 +41,41 @@ impl ReceiptWithItems {
     }
 }
 
+impl ReceiptWithItems {
+    pub fn total(&self) -> f32 {
+        self.items.iter().map(|i| i.price).sum()
+    }
+
+    pub fn anders_sum(&self) -> f32 {
+        self.items
+            .iter()
+            .filter(|i| i.anders_pay)
+            .map(|i| i.price / (i.ac_pay as u8 + i.anders_pay as u8 + i.andreas_pay as u8) as f32)
+            .sum()
+    }
+
+    pub fn andreas_sum(&self) -> f32 {
+        self.items
+            .iter()
+            .filter(|i| i.andreas_pay)
+            .map(|i| i.price / (i.ac_pay as u8 + i.anders_pay as u8 + i.andreas_pay as u8) as f32)
+            .sum()
+    }
+
+    pub fn ac_sum(&self) -> f32 {
+        self.items
+            .iter()
+            .filter(|i| i.ac_pay)
+            .map(|i| i.price / (i.ac_pay as u8 + i.anders_pay as u8 + i.andreas_pay as u8) as f32)
+            .sum()
+    }
+}
+
 #[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
 #[cfg_attr(feature = "ssr", derive(Insertable, AsChangeset))]
 #[cfg_attr(feature = "ssr", diesel(table_name = crate::schema::receipts))]
 pub struct ReceiptForm {
     pub store: String,
-    pub total: f32,
     pub datetime: NaiveDateTime,
 }
 
@@ -67,10 +96,8 @@ impl ReceiptForm {
 pub struct Receipt {
     pub id: i32,
     pub store: String,
-    pub total: f32,
     pub datetime: NaiveDateTime,
 }
-
 
 #[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
 #[cfg_attr(feature = "ssr", derive(Insertable, AsChangeset))]
@@ -79,12 +106,17 @@ pub struct ReceiptItemForm {
     pub receipt_id: i32,
     pub name: String,
     pub price: f32,
+    pub anders_pay: bool,
+    pub andreas_pay: bool,
+    pub ac_pay: bool,
 }
 
 #[cfg(feature = "ssr")]
 impl ReceiptItemForm {
     pub fn insert(&self, db: &mut DbConn) -> Result<ReceiptItem, Error> {
-        insert_into(receipt_items::table).values(self).get_result(db)
+        insert_into(receipt_items::table)
+            .values(self)
+            .get_result(db)
     }
 }
 
@@ -108,4 +140,7 @@ pub struct ReceiptItem {
     pub receipt_id: i32,
     pub name: String,
     pub price: f32,
+    pub anders_pay: bool,
+    pub andreas_pay: bool,
+    pub ac_pay: bool,
 }

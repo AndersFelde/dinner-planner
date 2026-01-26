@@ -135,6 +135,14 @@ pub async fn scan_receipt(
                 }
                 if let Ok(price) = price.parse::<f32>() {
                     let words = &words[..words.len() - 1];
+                    // For kr per kg elements, ex: xxxkg x kr <price>
+                    // x and kr is either split into two words or combined
+                    // Inshallah no other items match this pattern
+                    if (words.contains(&String::from("x")) && words.contains(&String::from("kr")))
+                        || words.contains(&String::from("xkr"))
+                    {
+                        continue;
+                    }
                     let name = words
                         .iter()
                         .filter(|word| !(word.chars().last() == Some('%') && word.len() <= 3))
@@ -144,6 +152,7 @@ pub async fn scan_receipt(
                     if name.contains("Totalt (") || name.contains("Sum ") {
                         break;
                     }
+
                     if name.len() > 2 {
                         items.push((name, price));
                     }
@@ -151,11 +160,8 @@ pub async fn scan_receipt(
             }
         }
 
-        let total = items.iter().map(|i| i.1).sum();
-
         let receipt = ReceiptForm {
             store: store.to_owned(),
-            total,
             datetime: chrono::Local::now().naive_local(),
         };
 
@@ -165,6 +171,9 @@ pub async fn scan_receipt(
                 receipt_id: -1, // This is a temporary hack as we dont have the id yet. It will be set in `create_receipt_with_items`
                 name,
                 price,
+                anders_pay: true,
+                andreas_pay: true,
+                ac_pay: true,
             });
         }
         // let _ = std::fs::remove_file(&final_path);
@@ -188,9 +197,22 @@ pub async fn create_receipt_with_items(
     let mut items = vec![];
     for mut item_form in receipt_items_forms {
         item_form.receipt_id = receipt.id;
-        items.push(server_err!(item_form.insert(db), "Could not insert receipt_item {item_form:?}")?);
+        items.push(server_err!(
+            item_form.insert(db),
+            "Could not insert receipt_item {item_form:?}"
+        )?);
     }
     Ok(ReceiptWithItems { receipt, items })
+}
+
+#[server]
+pub async fn get_all_receipts_with_items() -> Result<Vec<ReceiptWithItems>, ServerFnError> {
+    use crate::api::ssr::*;
+    let db = &mut get_db()?;
+    server_err!(
+        ReceiptWithItems::get_all(db),
+        "Could not get all receipts with items"
+    )
 }
 
 #[cfg(feature = "ssr")]
