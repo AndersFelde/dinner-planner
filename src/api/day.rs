@@ -1,6 +1,8 @@
 use crate::models::{
     day::{Day, DayForm},
     days_ingredients::DayWithMealAndIngredients,
+    meal::Meal,
+    receipt::ReceiptWithItems,
 };
 use leptos::prelude::*;
 
@@ -9,6 +11,20 @@ pub async fn get_day(id: i32) -> Result<Day, ServerFnError> {
     use crate::api::ssr::*;
     let db = &mut get_db()?;
     server_err!(Day::get(db, id), "Could not get day {id}")
+}
+
+#[server]
+pub async fn get_all_days_with_meals() -> Result<Vec<(Day, Option<Meal>)>, ServerFnError> {
+    use crate::api::ssr::*;
+    let db = &mut get_db()?;
+    server_err!(
+        days::table
+            .left_join(meals::table)
+            .select((Day::as_select(), Option::<Meal>::as_select()))
+            .order_by(days::date.desc())
+            .load::<(Day, Option<Meal>)>(db),
+        "Could not get all days with weeks"
+    )
 }
 #[cfg(feature = "ssr")]
 pub async fn get_days_for_meal(meal_id: i32) -> Result<Vec<Day>, ServerFnError> {
@@ -72,9 +88,11 @@ pub async fn upsert_day(day_form: DayForm) -> Result<DayWithMealAndIngredients, 
             ingredients,
         ));
     }
+    let receipts = ReceiptWithItems::get_by_day(db, day.id)?;
     Ok(DayWithMealAndIngredients {
         day,
         meal,
+        receipts,
     })
 }
 

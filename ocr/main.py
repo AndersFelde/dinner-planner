@@ -1,8 +1,10 @@
-import sys
 import json
 import os
-from PIL import Image, ImageOps, ImageEnhance
+import sys
+from multiprocessing import cpu_count
+
 import numpy as np
+from PIL import Image, ImageEnhance, ImageOps
 
 os.environ["PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK"] = "1"
 
@@ -33,6 +35,9 @@ def main():
 
         ocr = PaddleOCR(
             lang="en",
+            text_detection_model_name="PP-OCRv5_mobile_det",
+            text_recognition_model_name="en_PP-OCRv5_mobile_rec",
+            cpu_threads=cpu_count(),
             use_doc_orientation_classify=True,
             use_doc_unwarping=True,
             use_textline_orientation=True,

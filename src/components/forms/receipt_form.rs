@@ -1,10 +1,105 @@
+use crate::api::day::get_all_days_with_meals;
 use crate::api::receipt::{create_receipt_with_items, scan_receipt};
+use crate::components::forms::meal_form::CreateMealForm;
+use crate::components::modal::Modal;
 use crate::components::models::receipt::Receipt;
+use crate::models::day::Day;
+use crate::models::meal::Meal;
 use crate::models::receipt::{ReceiptForm, ReceiptItemForm, ReceiptWithItems};
+use chrono::{Datelike, Local};
 use leptos::prelude::*;
 use web_sys::wasm_bindgen::JsCast;
 use web_sys::{FormData, HtmlFormElement, SubmitEvent};
 
+#[component]
+fn DayPicker(matched_days: RwSignal<Vec<i32>>, open_modal: WriteSignal<bool>) -> impl IntoView {
+    let days_resource = OnceResource::new(get_all_days_with_meals());
+    let days_with_meals: RwSignal<Vec<(Day, Option<Meal>)>> = RwSignal::new(Vec::new());
+
+    Effect::watch(
+        move || days_resource.get(),
+        move |r_days, _, _| {
+            if let Some(Ok(r_days)) = r_days {
+                days_with_meals.set(r_days.clone());
+            }
+        },
+        true,
+    );
+
+    view! {
+        <div class="bg-white rounded-lg border border-gray-200 p-4">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">"Select Days for Receipt"</h3>
+            <div class="space-y-2 max-h-96 overflow-y-auto">
+                {move || {
+                    days_with_meals
+                        .read()
+                        .iter()
+                        .map(|(day, meal)| {
+                            let is_selected = matched_days.read().contains(&day.id);
+                            let bg_class = if is_selected {
+                                "bg-blue-100 border-blue-400"
+                            } else {
+                                "bg-gray-50 border-gray-200 hover:bg-gray-100"
+                            };
+                            let header = format!(
+                                "{} - {:02}.{:02}",
+                                day.date.weekday(),
+                                day.date.day(),
+                                day.date.month(),
+                            );
+                            let meal_name = meal.as_ref().map(|m| m.name.clone());
+                            let day_id = day.id.clone();
+                            view! {
+                                <div
+                                    class=format!(
+                                        "p-3 border rounded-lg cursor-pointer transition {} {}",
+                                        bg_class,
+                                        if is_selected { "ring-2 ring-blue-500" } else { "" },
+                                    )
+                                    on:click=move |_| {
+                                        if is_selected {
+                                            matched_days.update(|days| days.retain(|d| *d != day_id));
+                                        } else {
+                                            matched_days.update(|days| days.push(day_id));
+                                        }
+                                    }
+                                >
+                                    <div class="flex justify-between items-start">
+                                        <div class="flex-1">
+                                            <div class="font-medium text-gray-900">{header}</div>
+                                            <div class="text-sm text-gray-600">
+                                                {move || {
+                                                    meal_name.clone().unwrap_or_else(|| "No meal".to_string())
+                                                }}
+                                            </div>
+                                        </div>
+                                        <div class="ml-3">
+                                            <div class=format!(
+                                                "w-5 h-5 rounded border-2 transition {}",
+                                                if is_selected {
+                                                    "bg-blue-500 border-blue-500"
+                                                } else {
+                                                    "border-gray-400"
+                                                },
+                                            )></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        })
+                        .collect::<Vec<_>>()
+                }}
+            </div>
+            <button
+                type="button"
+                on:click=move |_| open_modal.set(false)
+                class="w-full mt-4 py-2 text-sm bg-gray-200 text-gray-900 font-semibold rounded hover:bg-gray-300 transition"
+            >
+                "Close"
+            </button>
+        </div>
+    }
+}
 #[component]
 pub fn ReceiptForm(
     receipt: RwSignal<Option<ReceiptWithItems>>,
@@ -12,11 +107,15 @@ pub fn ReceiptForm(
     receipt_form: ReceiptForm,
     receipt_items_forms: Vec<ReceiptItemForm>,
 ) -> impl IntoView {
-    let add_receipt_action = Action::new(|input: &(ReceiptForm, Vec<ReceiptItemForm>)| {
-        let receipt_form = input.0.clone();
-        let receipt_items_forms = input.1.clone();
-        async move { create_receipt_with_items(receipt_form, receipt_items_forms).await }
-    });
+    let add_receipt_action =
+        Action::new(|input: &(ReceiptForm, Vec<ReceiptItemForm>, Vec<i32>)| {
+            let receipt_form = input.0.clone();
+            let receipt_items_forms = input.1.clone();
+            let matched_days = input.2.clone();
+            async move {
+                create_receipt_with_items(receipt_form, receipt_items_forms, matched_days).await
+            }
+        });
 
     Effect::new(move || {
         if let Some(Ok(new_receipt)) = add_receipt_action.value().get() {
@@ -25,8 +124,10 @@ pub fn ReceiptForm(
         }
     });
 
-    let on_submit = move |receipt_form: ReceiptForm, receipt_items_forms: Vec<ReceiptItemForm>| {
-        add_receipt_action.dispatch((receipt_form, receipt_items_forms));
+    let on_submit = move |receipt_form: ReceiptForm,
+                          receipt_items_forms: Vec<ReceiptItemForm>,
+                          matched_days: Vec<i32>| {
+        add_receipt_action.dispatch((receipt_form, receipt_items_forms, matched_days));
     };
     let on_cancel = move || receipt_editing.set(false);
 
@@ -53,6 +154,8 @@ pub fn ReceiptForm(
     let (andreas_total, set_andreas_total) = signal(andreas_total);
     let (ac_total, set_ac_total) = signal(ac_total);
     let (items, set_items) = signal(receipt_items_forms);
+    let matched_days: RwSignal<Vec<i32>> = RwSignal::new(Vec::new());
+    let (show_day_picker, set_show_day_picker) = signal(false);
 
     Effect::watch(
         move || items.get(),
@@ -109,10 +212,13 @@ pub fn ReceiptForm(
             datetime: receipt_form.datetime,
         };
         // Call your server function to save meal and ingredients here
-        on_submit(receipt, items.get());
+        on_submit(receipt, items.get(), matched_days.get());
     };
 
     view! {
+        <Modal show=Signal::derive(show_day_picker)>
+            <DayPicker matched_days open_modal=set_show_day_picker />
+        </Modal>
         <div class="max-w-lg mx-auto my-6 rounded-xl border border-gray-200 bg-white p-6 shadow-md">
             // <!-- Receipt Header -->
             <div class="mb-4">
@@ -270,19 +376,26 @@ pub fn ReceiptForm(
                     <button
                         type="button"
                         on:click=add_item
-                        class="w-full py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition font-medium"
+                        class="w-full py-2 text-sm bg-blue-100 text-blue-700 font-semibold rounded hover:bg-blue-200 transition"
                     >
                         "+ Add Item"
                     </button>
                     <button
+                        type="button"
+                        on:click=move |_| set_show_day_picker.set(true)
+                        class="w-full py-2 text-sm bg-blue-500 text-white font-semibold rounded hover:bg-blue-600 transition"
+                    >
+                        {move || format!("Match to days ({})", matched_days.read().len())}
+                    </button>
+                    <button
                         type="submit"
-                        class="w-full py-1 text-sm bg-blue-500 text-white font-semibold rounded hover:bg-blue-600 transition"
+                        class="w-full py-2 text-sm bg-blue-500 text-white font-semibold rounded hover:bg-blue-600 transition"
                     >
                         "Save Receipt"
                     </button>
                     <button
                         type="button"
-                        class="w-full py-1 text-sm bg-red-500 text-white font-semibold rounded hover:bg-red-600 transition"
+                        class="w-full py-2 text-sm bg-red-500 text-white font-semibold rounded hover:bg-red-600 transition"
                         on:click=move |_| on_cancel()
                     >
                         "Cancel"

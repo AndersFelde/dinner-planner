@@ -10,6 +10,7 @@ pub struct ReceiptWithItems {
     #[serde(flatten)]
     pub receipt: Receipt,
     pub items: Vec<ReceiptItem>,
+    pub days: Option<Vec<crate::models::day::Day>>,
 }
 #[cfg(feature = "ssr")]
 impl ReceiptWithItems {
@@ -18,11 +19,15 @@ impl ReceiptWithItems {
 
         // Load all items belonging to this receipt
         let items: Vec<ReceiptItem> = ReceiptItem::belonging_to(&receipt).load(db)?;
-        Ok(ReceiptWithItems { receipt, items })
+        Ok(ReceiptWithItems {
+            days: Day::get_by_receipt(db, receipt.id)?,
+            receipt,
+            items,
+        })
     }
 
     pub fn get_all(db: &mut DbConn) -> Result<Vec<ReceiptWithItems>, Error> {
-        let receipts: Vec<Receipt> = receipts::table.load(db)?;
+        let receipts: Vec<Receipt> = receipts::table.order_by(receipts::id.desc()).load(db)?;
 
         // Load all receipt items belonging to those receipts
         let items: Vec<ReceiptItem> = ReceiptItem::belonging_to(&receipts).load(db)?;
@@ -34,10 +39,49 @@ impl ReceiptWithItems {
         let result = receipts
             .into_iter()
             .zip(grouped_items)
-            .map(|(receipt, items)| ReceiptWithItems { receipt, items })
-            .collect::<Vec<ReceiptWithItems>>();
+            .map(|(receipt, items)| {
+                Ok(ReceiptWithItems {
+                    days: Day::get_by_receipt(db, receipt.id)?,
+                    receipt,
+                    items,
+                })
+            })
+            .collect::<Result<Vec<ReceiptWithItems>, Error>>()?;
 
         Ok(result)
+    }
+
+    pub fn get_by_day(
+        db: &mut DbConn,
+        day_id: i32,
+    ) -> Result<Option<Vec<ReceiptWithItems>>, Error> {
+        use crate::schema::receipt_days;
+
+        let receipts_list: Vec<Receipt> = receipts::table
+            .inner_join(receipt_days::table.inner_join(days::table))
+            .filter(days::id.eq(day_id))
+            .select(receipts::all_columns)
+            .distinct()
+            .load(db)?;
+
+        // Load all items for these receipts
+        let items: Vec<ReceiptItem> = ReceiptItem::belonging_to(&receipts_list).load(db)?;
+        let grouped_items = items.grouped_by(&receipts_list);
+
+        // Combine receipts with their items
+        let result: Vec<ReceiptWithItems> = receipts_list
+            .into_iter()
+            .zip(grouped_items)
+            .map(|(receipt, items)| {
+                Ok(ReceiptWithItems {
+                    days: Day::get_by_receipt(db, receipt.id)?,
+                    receipt,
+                    items,
+                })
+            })
+            .collect::<Result<Vec<ReceiptWithItems>, Error>>()?;
+
+        Ok((!result.is_empty()).then_some(result))
     }
 }
 
@@ -143,4 +187,32 @@ pub struct ReceiptItem {
     pub anders_pay: bool,
     pub andreas_pay: bool,
     pub ac_pay: bool,
+}
+
+#[cfg_attr(
+    feature = "ssr",
+    derive(Identifiable, Insertable, Queryable, Selectable, Associations,)
+)]
+#[cfg_attr(feature = "ssr", diesel(belongs_to(Receipt)))]
+#[cfg_attr(feature = "ssr", diesel(belongs_to(Day)))]
+#[cfg_attr(feature = "ssr", diesel(table_name = crate::schema::receipt_days))]
+#[cfg_attr(feature = "ssr", diesel(primary_key(day_id, receipt_id)))]
+#[cfg_attr(feature = "ssr", diesel(check_for_backend(diesel::sqlite::Sqlite)))]
+#[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
+pub struct ReceiptDay {
+    pub day_id: i32,
+    pub receipt_id: i32,
+}
+
+#[cfg(feature = "ssr")]
+impl ReceiptDay {
+    pub fn upsert(&self, db: &mut DbConn) -> Result<ReceiptDay, Error> {
+        use crate::schema::receipt_days;
+
+        insert_into(receipt_days::table)
+            .values(self)
+            .on_conflict((receipt_days::day_id, receipt_days::receipt_id))
+            .do_nothing()
+            .get_result::<ReceiptDay>(db)
+    }
 }

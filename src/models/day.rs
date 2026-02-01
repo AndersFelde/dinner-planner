@@ -56,11 +56,35 @@ impl Day {
         days::table.select(Day::as_select()).load(db)
     }
 
+    pub fn get_all_ordered(db: &mut DbConn) -> Result<Vec<Day>, Error> {
+        days::table
+            .select(Day::as_select())
+            .order_by(days::date.desc())
+            .load(db)
+    }
+
     pub fn get_for_meal(db: &mut DbConn, id: i32) -> Result<Vec<Day>, Error> {
         days::table.filter(days::meal_id.eq(id)).load(db)
     }
 
-    pub fn update_attendance(db: &mut DbConn, id: i32, anders_attend: bool, ac_attend: bool, andreas_attend: bool) -> Result<usize, Error> {
+    pub fn get_by_receipt(db: &mut DbConn, receipt_id: i32) -> Result<Option<Vec<Day>>, Error> {
+        use crate::schema::receipt_days;
+
+        let days = days::table
+            .inner_join(receipt_days::table)
+            .filter(receipt_days::receipt_id.eq(receipt_id))
+            .select(days::all_columns)
+            .load(db)?;
+        Ok((!days.is_empty()).then_some(days))
+    }
+
+    pub fn update_attendance(
+        db: &mut DbConn,
+        id: i32,
+        anders_attend: bool,
+        ac_attend: bool,
+        andreas_attend: bool,
+    ) -> Result<usize, Error> {
         update(days::table)
             .filter(days::id.eq(id))
             .set((

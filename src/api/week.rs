@@ -1,9 +1,10 @@
 #[cfg(feature = "ssr")]
 use crate::models::{day::DayForm, days_ingredients::IngredientWithBought};
 
-use crate::models::days_ingredients::DayWithMealAndIngredients;
+use crate::models::{days_ingredients::DayWithMealAndIngredients, receipt::ReceiptWithItems};
 use chrono::{Datelike, Local, NaiveDate, Weekday};
 use leptos::prelude::*;
+use leptos::logging::log;
 
 #[derive(serde::Deserialize, serde::Serialize, Clone, Debug, PartialEq)]
 pub struct Week {
@@ -118,6 +119,7 @@ pub async fn days_for_week(week: Week) -> Result<[DayWithMealAndIngredients; 7],
     }
 
     for (day, meal) in days_rows {
+        let receipts = ReceiptWithItems::get_by_day(db, day.id)?;
         if let Some(meal) = meal {
             let ingredients = server_err!(
                 DayIngredient::belonging_to(&day)
@@ -136,11 +138,13 @@ pub async fn days_for_week(week: Week) -> Result<[DayWithMealAndIngredients; 7],
             days.push(DayWithMealAndIngredients {
                 day: day,
                 meal: Some((meal, ingredients)),
+                receipts,
             });
         } else {
             days.push(DayWithMealAndIngredients {
                 day: day,
                 meal: None,
+                receipts,
             })
         }
     }

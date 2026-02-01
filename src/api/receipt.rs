@@ -4,7 +4,9 @@ use leptos::server_fn::codec::{MultipartData, MultipartFormData};
 use serde::{Deserialize, Serialize};
 use std::process::Command;
 
-use crate::models::receipt::{ReceiptForm, ReceiptItem, ReceiptItemForm, ReceiptWithItems};
+use crate::models::receipt::{
+    ReceiptDay, ReceiptForm, ReceiptItem, ReceiptItemForm, ReceiptWithItems,
+};
 
 #[cfg(feature = "ssr")]
 #[derive(Debug, Deserialize)]
@@ -85,7 +87,7 @@ pub async fn scan_receipt(
             "image/pdf" => "pdf",
             t => return Err(ServerFnError::new(&format!("Unsupported file type {}", t))),
         };
-        log!("Got filetype {}", extension);
+        // log!("Got filetype {}", extension);
 
         // 1. Create a temporary file
         // NamedTempFile::new() creates it in the default temp dir
@@ -95,7 +97,7 @@ pub async fn scan_receipt(
             .tempfile()
             .map_err(|_| ServerFnError::new("Could not create temporary file"))?;
         let path = temp_file.path().to_owned();
-        log!("created tempfile at {:?}", path);
+        // log!("created tempfile at {:?}", path);
 
         let (std_file, _path) = temp_file.keep().unwrap();
         let mut file = File::from_std(std_file);
@@ -111,8 +113,6 @@ pub async fn scan_receipt(
         final_path = path.to_string_lossy().into_owned();
 
         let lines = ocr_image(&final_path, db).map_err(ServerFnError::new)?;
-
-        log!("Lines: {lines:?}");
 
         let store = lines
             .iter()
@@ -176,7 +176,7 @@ pub async fn scan_receipt(
                 ac_pay: true,
             });
         }
-        // let _ = std::fs::remove_file(&final_path);
+        let _ = std::fs::remove_file(&final_path);
         return Ok((receipt, receipt_items));
     }
 
@@ -187,6 +187,7 @@ pub async fn scan_receipt(
 pub async fn create_receipt_with_items(
     receipt_form: ReceiptForm,
     receipt_items_forms: Vec<ReceiptItemForm>,
+    matched_days: Vec<i32>,
 ) -> Result<ReceiptWithItems, ServerFnError> {
     use crate::api::ssr::*;
     let db = &mut get_db()?;
@@ -202,7 +203,20 @@ pub async fn create_receipt_with_items(
             "Could not insert receipt_item {item_form:?}"
         )?);
     }
-    Ok(ReceiptWithItems { receipt, items })
+    for day in matched_days {
+        server_err!(
+            ReceiptDay {
+                day_id: day,
+                receipt_id: receipt.id
+            }.upsert(db),
+            "Could not insert receipt day {day}"
+        )?;
+    }
+    Ok(ReceiptWithItems {
+        days: Day::get_by_receipt(db, receipt.id)?,
+        receipt,
+        items,
+    })
 }
 
 #[server]

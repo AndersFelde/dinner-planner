@@ -1,7 +1,7 @@
 use crate::models::{
     day::Day,
     ingredient::Ingredient,
-    meal::Meal,
+    meal::Meal, receipt::ReceiptWithItems,
 };
 #[cfg(feature = "ssr")]
 use diesel::prelude::*;
@@ -13,6 +13,7 @@ use crate::api::ssr::*;
 pub struct DayWithMealAndIngredients {
     pub day: Day,
     pub meal: Option<(Meal, Vec<IngredientWithBought>)>,
+    pub receipts: Option<Vec<ReceiptWithItems>>
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]

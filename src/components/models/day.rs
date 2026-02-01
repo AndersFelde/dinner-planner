@@ -4,6 +4,7 @@ use crate::components::forms::day_form::DayForm;
 use crate::components::forms::meal_form::CreateMealForm;
 use crate::components::modal::Modal;
 use crate::components::models::ingredient::DayIngredient;
+use crate::components::models::receipt::Receipt;
 use crate::models::days_ingredients::DayWithMealAndIngredients;
 use crate::models::meal::{Meal, MealWithIngredients};
 use chrono::{Datelike, Local};
@@ -42,6 +43,7 @@ pub fn Day(day: DayWithMealAndIngredients) -> impl IntoView {
     let new_meal: RwSignal<Option<MealWithIngredients>> = RwSignal::new(None);
     let meals_resource = OnceResource::new(get_meals_ordered());
     let meals: RwSignal<Vec<Meal>> = RwSignal::new(Vec::new());
+    let view_receipts = RwSignal::new(false);
 
     Effect::watch(
         move || show_create_meal.get(),
@@ -77,6 +79,16 @@ pub fn Day(day: DayWithMealAndIngredients) -> impl IntoView {
         },
         true,
     );
+    let receipt_data = move || {
+        s_day.read().receipts.as_ref().map(|r| {
+            r.iter()
+                .map(|r| {
+                    view! { <Receipt receipt_with_items=r.clone() /> }
+                })
+                .collect::<Vec<_>>()
+        })
+    };
+
     view! {
         <Modal show=Signal::derive(show_create_meal)>
             <CreateMealForm meal=new_meal completed=create_meal_completed.write_only() />
@@ -88,6 +100,31 @@ pub fn Day(day: DayWithMealAndIngredients) -> impl IntoView {
                 meals=meals
                 create_meal=show_create_meal
             />
+        </Modal>
+        <Modal show=Signal::derive(view_receipts)>
+            <div class="relative max-h-[80vh] overflow-y-auto">
+                <button
+                    class="fixed bottom-0 left-1/2 -translate-x-1/2 mb-4 px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg shadow-md transition z-10 flex items-center gap-2"
+                    on:click=move |_| view_receipts.set(false)
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke-width="1.5"
+                        stroke="currentColor"
+                        class="size-5"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M6 18 18 6M6 6l12 12"
+                        />
+                    </svg>
+                    "Close"
+                </button>
+                {move || receipt_data}
+            </div>
         </Modal>
         {move || {
             let day = s_day.get();
@@ -132,7 +169,7 @@ pub fn Day(day: DayWithMealAndIngredients) -> impl IntoView {
                                     view! {
                                         <a href=recipie_url target="_blank">
                                             <span
-                                                class="absolute top-2 right-2 z-10"
+                                                class="absolute top-2 right-11 z-10"
                                                 title="View Recipe"
                                             >
                                                 <svg
@@ -146,12 +183,40 @@ pub fn Day(day: DayWithMealAndIngredients) -> impl IntoView {
                                                     <path
                                                         stroke-linecap="round"
                                                         stroke-linejoin="round"
-                                                        d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 0 1-2.25 2.25M16.5 7.5V18a2.25 2.25 0 0 0 2.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 0 0 2.25 2.25h13.5M6 7.5h3v3H6v-3Z"
+                                                        d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5"
                                                     />
                                                 </svg>
 
                                             </span>
                                         </a>
+                                    }
+                                        .into_any()
+                                } else {
+                                    view! {}.into_any()
+                                }}
+                                {if day.receipts.is_some() {
+                                    view! {
+                                        <span
+                                            class="absolute top-2 right-2 z-10"
+                                            title="View Recipe"
+                                            on:click=move |_| view_receipts.set(true)
+                                        >
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke-width="1.5"
+                                                stroke="currentColor"
+                                                class="size-6 text-blue-500"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 0 1-2.25 2.25M16.5 7.5V18a2.25 2.25 0 0 0 2.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 0 0 2.25 2.25h13.5M6 7.5h3v3H6v-3Z"
+                                                />
+                                            </svg>
+
+                                        </span>
                                     }
                                         .into_any()
                                 } else {
