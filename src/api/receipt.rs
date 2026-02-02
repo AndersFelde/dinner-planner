@@ -187,7 +187,7 @@ pub async fn scan_receipt(
 pub async fn create_receipt_with_items(
     receipt_form: ReceiptForm,
     receipt_items_forms: Vec<ReceiptItemForm>,
-    matched_days: Vec<i32>,
+    matched_days: Option<Vec<i32>>,
 ) -> Result<ReceiptWithItems, ServerFnError> {
     use crate::api::ssr::*;
     let db = &mut get_db()?;
@@ -203,7 +203,7 @@ pub async fn create_receipt_with_items(
             "Could not insert receipt_item {item_form:?}"
         )?);
     }
-    for day in matched_days {
+    for day in matched_days.unwrap_or_default() {
         server_err!(
             ReceiptDay {
                 day_id: day,

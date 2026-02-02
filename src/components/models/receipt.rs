@@ -4,7 +4,7 @@ use web_sys::window;
 use crate::models::receipt::ReceiptWithItems;
 
 #[component]
-pub fn Receipt (receipt_with_items: ReceiptWithItems) -> impl IntoView {
+pub fn Receipt(receipt_with_items: ReceiptWithItems) -> impl IntoView {
     let total = receipt_with_items.total();
     let anders_sum = receipt_with_items.anders_sum();
     let andreas_sum = receipt_with_items.andreas_sum();
@@ -12,15 +12,20 @@ pub fn Receipt (receipt_with_items: ReceiptWithItems) -> impl IntoView {
     let receipt = receipt_with_items.receipt;
     let items = receipt_with_items.items;
     let days = receipt_with_items.days;
-    
+
     let copied_signal = RwSignal::new(None::<&str>);
-    
+
+    let format_price = |value: f32| format!("{:.2}", value).replace(".", ",");
+
     let copy_to_clipboard = move |name: &'static str, value: f32| {
-        let value_str = format!("{:.2}", value);
+        let value_str = format_price(value);
         if let Some(win) = window() {
             let _ = win.navigator().clipboard().write_text(&value_str);
             copied_signal.set(Some(name));
-            set_timeout(move || copied_signal.set(None), std::time::Duration::from_millis(1500));
+            set_timeout(
+                move || copied_signal.set(None),
+                std::time::Duration::from_millis(1500),
+            );
         }
     };
 
@@ -46,9 +51,17 @@ pub fn Receipt (receipt_with_items: ReceiptWithItems) -> impl IntoView {
                         }
                         on:click=move |_| copy_to_clipboard("anders", anders_sum)
                     >
-                        <div class="text-2xl font-bold text-blue-900">{format!("{:.2}", anders_sum)}</div>
+                        <div class="text-2xl font-bold text-blue-900">
+                            {format_price(anders_sum)}
+                        </div>
                         <div class="text-xs font-semibold text-blue-700">
-                            {move || if copied_signal.get() == Some("anders") { "Copied!" } else { "Anders" }}
+                            {move || {
+                                if copied_signal.get() == Some("anders") {
+                                    "Copied!"
+                                } else {
+                                    "Anders"
+                                }
+                            }}
                         </div>
                     </div>
                     <div
@@ -61,9 +74,17 @@ pub fn Receipt (receipt_with_items: ReceiptWithItems) -> impl IntoView {
                         }
                         on:click=move |_| copy_to_clipboard("andreas", andreas_sum)
                     >
-                        <div class="text-2xl font-bold text-green-900">{format!("{:.2}", andreas_sum)}</div>
+                        <div class="text-2xl font-bold text-green-900">
+                            {format_price(andreas_sum)}
+                        </div>
                         <div class="text-xs font-semibold text-green-700">
-                            {move || if copied_signal.get() == Some("andreas") { "Copied!" } else { "Andreas" }}
+                            {move || {
+                                if copied_signal.get() == Some("andreas") {
+                                    "Copied!"
+                                } else {
+                                    "Andreas"
+                                }
+                            }}
                         </div>
                     </div>
                     <div
@@ -76,9 +97,13 @@ pub fn Receipt (receipt_with_items: ReceiptWithItems) -> impl IntoView {
                         }
                         on:click=move |_| copy_to_clipboard("ac", ac_sum)
                     >
-                        <div class="text-2xl font-bold text-purple-900">{format!("{:.2}", ac_sum)}</div>
+                        <div class="text-2xl font-bold text-purple-900">
+                            {format_price(ac_sum)}
+                        </div>
                         <div class="text-xs font-semibold text-purple-700">
-                            {move || if copied_signal.get() == Some("ac") { "Copied!" } else { "AC" }}
+                            {move || {
+                                if copied_signal.get() == Some("ac") { "Copied!" } else { "AC" }
+                            }}
                         </div>
                     </div>
                 </div>
@@ -95,7 +120,9 @@ pub fn Receipt (receipt_with_items: ReceiptWithItems) -> impl IntoView {
                 .map(|days_list| {
                     view! {
                         <div class="mb-4 pb-4 border-b">
-                            <h4 class="text-sm font-semibold text-gray-700 mb-2">"Linked to Days:"</h4>
+                            <h4 class="text-sm font-semibold text-gray-700 mb-2">
+                                "Linked to Days:"
+                            </h4>
                             <div class="flex flex-wrap gap-2">
                                 {days_list
                                     .iter()
@@ -139,14 +166,19 @@ pub fn Receipt (receipt_with_items: ReceiptWithItems) -> impl IntoView {
                             >
                                 <span class="px-1 py-1 text-sm text-gray-900 truncate">{name}</span>
                                 <span class="px-1 py-1 text-sm text-gray-900">{price}</span>
-                                <span class="text-center text-sm text-gray-700">{if anders { "X" } else { "" }}</span>
-                                <span class="text-center text-sm text-gray-700">{if andreas { "X" } else { "" }}</span>
-                                <span class="text-center text-sm text-gray-700">{if ac { "X" } else { "" }}</span>
+                                <span class="text-center text-sm text-gray-700">
+                                    {if anders { "X" } else { "" }}
+                                </span>
+                                <span class="text-center text-sm text-gray-700">
+                                    {if andreas { "X" } else { "" }}
+                                </span>
+                                <span class="text-center text-sm text-gray-700">
+                                    {if ac { "X" } else { "" }}
+                                </span>
                             </div>
                         }
                     })
-                    .collect::<Vec<_>>()
-                }
+                    .collect::<Vec<_>>()}
             </div>
         </div>
     }

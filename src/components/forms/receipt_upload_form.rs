@@ -20,11 +20,40 @@ pub fn ReceiptUpload(
     let pending = upload_action.pending();
     let upload = upload_action.value();
 
+    let progress = RwSignal::new(0.0);
+
     Effect::new(move || {
         if let Some(Ok((new_receipt_form, new_items_forms))) = upload_action.value().get() {
             receipt_form.set(Some(new_receipt_form));
             receipt_items_forms.set(Some(new_items_forms));
             receipt_editing.set(true);
+        }
+    });
+
+    Effect::new(move || {
+        if pending.get() {
+            progress.set(0.0);
+            let duration_ms = 25000.0; // 24 seconds
+            let interval_ms = 100; // Update every 100ms
+            let increment = 100.0 / (duration_ms / interval_ms as f64);
+
+            let interval = set_interval_with_handle(
+                move || {
+                    let current = progress.get();
+                    if current < 100.0 {
+                        progress.set((current + increment).min(100.0));
+                    }
+                },
+                std::time::Duration::from_millis(interval_ms),
+            ).ok();
+
+            on_cleanup(move || {
+                if let Some(handle) = interval {
+                    handle.clear();
+                }
+            });
+        } else {
+            progress.set(0.0);
         }
     });
 
@@ -64,9 +93,9 @@ pub fn ReceiptUpload(
                 <button
                     type="submit"
                     class="inline-flex w-full items-center justify-center rounded-md
-                    bg-indigo-600 px-4 py-2 text-sm font-semibold text-white
-                    hover:bg-indigo-700
-                    focus:outline-none focus:ring-2 focus:ring-indigo-500
+                    bg-blue-500 px-4 py-2 text-sm font-semibold text-white
+                    hover:bg-blue-700
+                    focus:outline-none focus:ring-2 focus:ring-blue-400
                     focus:ring-offset-2
                     disabled:cursor-not-allowed disabled:opacity-50"
                     disabled=move || pending.get()
@@ -82,7 +111,20 @@ pub fn ReceiptUpload(
                         view! { <p class="text-gray-500">Select a file to begin.</p> }
                             .into_any()
                     } else if pending.get() {
-                        view! { <p class="text-indigo-600">Processing receipt</p> }.into_any()
+                        view! {
+                            <div>
+                                <p class="text-blue-600 mb-2">Processing receipt</p>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                    <div
+                                        class="bg-blue-600 h-2.5 rounded-full transition-all duration-100"
+                                        style:width=move || format!("{}%", progress.get())
+                                    ></div>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    {move || format!("{}%", progress.get() as u32)}
+                                </p>
+                            </div>
+                        }.into_any()
                     } else if let Some(Ok(_)) = upload.read().as_ref() {
                         view! {
                             // <Receipt receipt_with_items=value/>

@@ -108,7 +108,7 @@ pub fn ReceiptForm(
     receipt_items_forms: Vec<ReceiptItemForm>,
 ) -> impl IntoView {
     let add_receipt_action =
-        Action::new(|input: &(ReceiptForm, Vec<ReceiptItemForm>, Vec<i32>)| {
+        Action::new(|input: &(ReceiptForm, Vec<ReceiptItemForm>, Option<Vec<i32>>)| {
             let receipt_form = input.0.clone();
             let receipt_items_forms = input.1.clone();
             let matched_days = input.2.clone();
@@ -126,7 +126,7 @@ pub fn ReceiptForm(
 
     let on_submit = move |receipt_form: ReceiptForm,
                           receipt_items_forms: Vec<ReceiptItemForm>,
-                          matched_days: Vec<i32>| {
+                          matched_days: Option<Vec<i32>>| {
         add_receipt_action.dispatch((receipt_form, receipt_items_forms, matched_days));
     };
     let on_cancel = move || receipt_editing.set(false);
@@ -212,7 +212,9 @@ pub fn ReceiptForm(
             datetime: receipt_form.datetime,
         };
         // Call your server function to save meal and ingredients here
-        on_submit(receipt, items.get(), matched_days.get());
+        let days = matched_days.get();
+        let days_to_send = if days.is_empty() { None } else { Some(days) };
+        on_submit(receipt, items.get(), days_to_send);
     };
 
     view! {
@@ -237,44 +239,22 @@ pub fn ReceiptForm(
 
                 <div class="grid grid-cols-3 gap-2 mb-2">
                     <div
-                        class="bg-blue-50 rounded-lg p-3 text-center border border-blue-200 cursor-pointer hover:bg-blue-100 transition active:scale-95"
-                        on:click=move |_| {
-                            let value = format!("{:.2}", anders_total.get());
-                            if let Some(window) = web_sys::window() {
-                                let _ = window.navigator().clipboard().write_text(&value);
-                            }
-                        }
+                        class="bg-blue-50 rounded-lg p-3 text-center border border-blue-200"
                     >
                         <div class="text-2xl font-bold text-blue-900">
-                            {move || format!("{:.2}", anders_total.get())}
+                            {move || format!("{:.2}", anders_total.get()).replace(".", ",")}
                         </div>
                         <div class="text-xs font-semibold text-blue-700">"Anders"</div>
                     </div>
-                    <div
-                        class="bg-green-50 rounded-lg p-3 text-center border border-green-200 cursor-pointer hover:bg-green-100 transition active:scale-95"
-                        on:click=move |_| {
-                            let value = format!("{:.2}", andreas_total.get());
-                            if let Some(window) = web_sys::window() {
-                                let _ = window.navigator().clipboard().write_text(&value);
-                            }
-                        }
-                    >
+                    <div class="bg-green-50 rounded-lg p-3 text-center border border-green-200">
                         <div class="text-2xl font-bold text-green-900">
-                            {move || format!("{:.2}", andreas_total.get())}
+                            {move || format!("{:.2}", andreas_total.get()).replace(".", ",")}
                         </div>
                         <div class="text-xs font-semibold text-green-700">"Andreas"</div>
                     </div>
-                    <div
-                        class="bg-purple-50 rounded-lg p-3 text-center border border-purple-200 cursor-pointer hover:bg-purple-100 transition active:scale-95"
-                        on:click=move |_| {
-                            let value = format!("{:.2}", ac_total.get());
-                            if let Some(window) = web_sys::window() {
-                                let _ = window.navigator().clipboard().write_text(&value);
-                            }
-                        }
-                    >
+                    <div class="bg-purple-50 rounded-lg p-3 text-center border border-purple-200">
                         <div class="text-2xl font-bold text-purple-900">
-                            {move || format!("{:.2}", ac_total.get())}
+                            {move || format!("{:.2}", ac_total.get()).replace(".", ",")}
                         </div>
                         <div class="text-xs font-semibold text-purple-700">"AC"</div>
                     </div>
@@ -293,13 +273,14 @@ pub fn ReceiptForm(
                 <div class="space-y-1">
                     <div
                         class="grid gap-1 text-xs font-semibold text-gray-600 mb-1"
-                        style="grid-template-columns: 1fr 70px 45px 45px 45px;"
+                        style="grid-template-columns: 1fr 50px 30px 30px 30px 24px;"
                     >
                         <div>"Item"</div>
                         <div>"Price"</div>
                         <div class="text-center">"An"</div>
                         <div class="text-center">"As"</div>
                         <div class="text-center">"AC"</div>
+                        <div></div>
                     </div>
                     {move || {
                         items
@@ -311,7 +292,7 @@ pub fn ReceiptForm(
                                 view! {
                                     <div
                                         class="grid gap-1 items-center border-b border-gray-200 py-1"
-                                        style="grid-template-columns: 1fr 70px 45px 45px 45px;"
+                                        style="grid-template-columns: 1fr 50px 30px 30px 30px 24px;"
                                     >
                                         <input
                                             required
@@ -336,35 +317,66 @@ pub fn ReceiptForm(
                                                 }
                                             }
                                         />
-                                        <input
-                                            type="checkbox"
-                                            checked=item.anders_pay
-                                            class="w-4 h-4 cursor-pointer mx-auto"
-                                            on:input:target=move |ev| {
-                                                set_items
-                                                    .update(|items| items[i].anders_pay = ev.target().checked())
-                                            }
-                                        />
-                                        <input
-                                            type="checkbox"
-                                            checked=item.andreas_pay
-                                            class="w-4 h-4 cursor-pointer mx-auto"
-                                            on:input:target=move |ev| {
+                                        <div class="flex justify-center">
+                                            <input
+                                                type="checkbox"
+                                                checked=item.anders_pay
+                                                class="w-4 h-4 cursor-pointer"
+                                                on:input:target=move |ev| {
+                                                    set_items
+                                                        .update(|items| items[i].anders_pay = ev.target().checked())
+                                                }
+                                            />
+                                        </div>
+                                        <div class="flex justify-center">
+                                            <input
+                                                type="checkbox"
+                                                checked=item.andreas_pay
+                                                class="w-4 h-4 cursor-pointer"
+                                                on:input:target=move |ev| {
+                                                    set_items
+                                                        .update(|items| {
+                                                            items[i].andreas_pay = ev.target().checked();
+                                                        })
+                                                }
+                                            />
+                                        </div>
+                                        <div class="flex justify-center">
+                                            <input
+                                                type="checkbox"
+                                                checked=item.ac_pay
+                                                class="w-4 h-4 cursor-pointer"
+                                                on:input:target=move |ev| {
+                                                    set_items
+                                                        .update(|items| items[i].ac_pay = ev.target().checked())
+                                                }
+                                            />
+                                        </div>
+                                        <button
+                                            type="button"
+                                            class="text-red-500 hover:text-red-700 hover:bg-red-50 rounded p-0.5 transition"
+                                            on:click=move |_| {
                                                 set_items
                                                     .update(|items| {
-                                                        items[i].andreas_pay = ev.target().checked();
-                                                    })
+                                                        items.remove(i);
+                                                    });
                                             }
-                                        />
-                                        <input
-                                            type="checkbox"
-                                            checked=item.ac_pay
-                                            class="w-4 h-4 cursor-pointer mx-auto"
-                                            on:input:target=move |ev| {
-                                                set_items
-                                                    .update(|items| items[i].ac_pay = ev.target().checked())
-                                            }
-                                        />
+                                        >
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke-width="1.5"
+                                                stroke="currentColor"
+                                                class="w-5 h-5"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    d="M6 18 18 6M6 6l12 12"
+                                                />
+                                            </svg>
+                                        </button>
                                     </div>
                                 }
                             })
