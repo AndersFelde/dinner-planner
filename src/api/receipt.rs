@@ -232,10 +232,363 @@ pub async fn get_all_receipts_with_items() -> Result<Vec<ReceiptWithItems>, Serv
 #[cfg(feature = "ssr")]
 #[cfg(test)]
 mod test {
-    use super::ReceiptItem;
-    use crate::api::receipt::ocr_image;
+    use super::*;
+    use crate::db::tests::TEST_POOL;
+    use crate::models::day::{Day, DayForm};
+    use chrono::{Datelike, Local};
+    use diesel::Connection;
 
     #[test]
-    // TODO: create test
-    pub fn test_ocr() {}
+    pub fn test_create_receipt_with_items_no_days() {
+        let db = &mut TEST_POOL.clone().get().unwrap();
+        db.test_transaction(|db| -> Result<(), ()> {
+            let receipt_form = ReceiptForm {
+                store: String::from("Test Store"),
+                datetime: Local::now().naive_local(),
+            };
+
+            let items_forms = vec![
+                ReceiptItemForm {
+                    receipt_id: -1,
+                    name: String::from("Item 1"),
+                    price: 10.50,
+                    anders_pay: true,
+                    andreas_pay: true,
+                    ac_pay: false,
+                },
+                ReceiptItemForm {
+                    receipt_id: -1,
+                    name: String::from("Item 2"),
+                    price: 25.00,
+                    anders_pay: true,
+                    andreas_pay: false,
+                    ac_pay: true,
+                },
+            ];
+
+            let receipt = receipt_form.insert(db).unwrap();
+            assert_eq!(receipt.store, "Test Store");
+
+            let mut created_items = vec![];
+            for mut item_form in items_forms.clone() {
+                item_form.receipt_id = receipt.id;
+                created_items.push(item_form.insert(db).unwrap());
+            }
+
+            assert_eq!(created_items.len(), 2);
+            assert_eq!(created_items[0].name, "Item 1");
+            assert_eq!(created_items[0].price, 10.50);
+            assert_eq!(created_items[1].name, "Item 2");
+            assert_eq!(created_items[1].price, 25.00);
+
+            Ok(())
+        });
+    }
+
+    #[test]
+    pub fn test_create_receipt_with_items_and_days() {
+        let db = &mut TEST_POOL.clone().get().unwrap();
+        db.test_transaction(|db| -> Result<(), ()> {
+            let day = Local::now();
+            let day1 = DayForm {
+                date: day.date_naive(),
+                meal_id: None,
+                week: day.iso_week().week() as i32,
+                year: day.year(),
+            }
+            .upsert(db)
+            .unwrap();
+
+            let day2 = DayForm {
+                date: day.date_naive().succ_opt().unwrap(),
+                meal_id: None,
+                week: day.iso_week().week() as i32,
+                year: day.year(),
+            }
+            .upsert(db)
+            .unwrap();
+
+            let receipt_form = ReceiptForm {
+                store: String::from("Test Store"),
+                datetime: Local::now().naive_local(),
+            };
+
+            let receipt = receipt_form.insert(db).unwrap();
+
+            ReceiptDay {
+                day_id: day1.id,
+                receipt_id: receipt.id,
+            }
+            .upsert(db)
+            .unwrap();
+
+            ReceiptDay {
+                day_id: day2.id,
+                receipt_id: receipt.id,
+            }
+            .upsert(db)
+            .unwrap();
+
+            let days = Day::get_by_receipt(db, receipt.id).unwrap().unwrap();
+            assert_eq!(days.len(), 2);
+            assert!(days.iter().any(|d| d.id == day1.id));
+            assert!(days.iter().any(|d| d.id == day2.id));
+
+            Ok(())
+        });
+    }
+
+    #[test]
+    pub fn test_receipt_with_items_calculations() {
+        let db = &mut TEST_POOL.clone().get().unwrap();
+        db.test_transaction(|db| -> Result<(), ()> {
+            let receipt_form = ReceiptForm {
+                store: String::from("Test Store"),
+                datetime: Local::now().naive_local(),
+            };
+
+            let receipt = receipt_form.insert(db).unwrap();
+
+            let item1 = ReceiptItemForm {
+                receipt_id: receipt.id,
+                name: String::from("Item 1"),
+                price: 30.00,
+                anders_pay: true,
+                andreas_pay: true,
+                ac_pay: true,
+            }
+            .insert(db)
+            .unwrap();
+
+            let item2 = ReceiptItemForm {
+                receipt_id: receipt.id,
+                name: String::from("Item 2"),
+                price: 60.00,
+                anders_pay: true,
+                andreas_pay: false,
+                ac_pay: false,
+            }
+            .insert(db)
+            .unwrap();
+
+            let item3 = ReceiptItemForm {
+                receipt_id: receipt.id,
+                name: String::from("Item 3"),
+                price: 90.00,
+                anders_pay: false,
+                andreas_pay: true,
+                ac_pay: true,
+            }
+            .insert(db)
+            .unwrap();
+
+            let receipt_with_items = ReceiptWithItems {
+                receipt,
+                items: vec![item1, item2, item3],
+                days: None,
+            };
+
+            // Total should be 30 + 60 + 90 = 180
+            assert_eq!(receipt_with_items.total(), 180.00);
+
+            // Anders: 30/3 + 60/1 = 10 + 60 = 70
+            assert_eq!(receipt_with_items.anders_sum(), 70.00);
+
+            // Andreas: 30/3 + 90/2 = 10 + 45 = 55
+            assert_eq!(receipt_with_items.andreas_sum(), 55.00);
+
+            // AC: 30/3 + 90/2 = 10 + 45 = 55
+            assert_eq!(receipt_with_items.ac_sum(), 55.00);
+
+            Ok(())
+        });
+    }
+
+    #[test]
+    pub fn test_get_all_receipts_with_items() {
+        let db = &mut TEST_POOL.clone().get().unwrap();
+        db.test_transaction(|db| -> Result<(), ()> {
+            let receipt1 = ReceiptForm {
+                store: String::from("Store 1"),
+                datetime: Local::now().naive_local(),
+            }
+            .insert(db)
+            .unwrap();
+
+            ReceiptItemForm {
+                receipt_id: receipt1.id,
+                name: String::from("Item 1"),
+                price: 10.00,
+                anders_pay: true,
+                andreas_pay: true,
+                ac_pay: true,
+            }
+            .insert(db)
+            .unwrap();
+
+            let receipt2 = ReceiptForm {
+                store: String::from("Store 2"),
+                datetime: Local::now().naive_local(),
+            }
+            .insert(db)
+            .unwrap();
+
+            ReceiptItemForm {
+                receipt_id: receipt2.id,
+                name: String::from("Item 2"),
+                price: 20.00,
+                anders_pay: true,
+                andreas_pay: false,
+                ac_pay: true,
+            }
+            .insert(db)
+            .unwrap();
+
+            let all_receipts = ReceiptWithItems::get_all(db).unwrap();
+            assert_eq!(all_receipts.len(), 2);
+
+            // Receipts should be ordered by id desc
+            assert_eq!(all_receipts[0].receipt.store, "Store 2");
+            assert_eq!(all_receipts[0].items.len(), 1);
+            assert_eq!(all_receipts[1].receipt.store, "Store 1");
+            assert_eq!(all_receipts[1].items.len(), 1);
+
+            Ok(())
+        });
+    }
+
+    #[test]
+    pub fn test_get_receipt_by_id() {
+        let db = &mut TEST_POOL.clone().get().unwrap();
+        db.test_transaction(|db| -> Result<(), ()> {
+            let receipt = ReceiptForm {
+                store: String::from("Test Store"),
+                datetime: Local::now().naive_local(),
+            }
+            .insert(db)
+            .unwrap();
+
+            ReceiptItemForm {
+                receipt_id: receipt.id,
+                name: String::from("Item 1"),
+                price: 15.50,
+                anders_pay: true,
+                andreas_pay: true,
+                ac_pay: false,
+            }
+            .insert(db)
+            .unwrap();
+
+            let fetched = ReceiptWithItems::get(db, receipt.id).unwrap();
+            assert_eq!(fetched.receipt.id, receipt.id);
+            assert_eq!(fetched.receipt.store, "Test Store");
+            assert_eq!(fetched.items.len(), 1);
+            assert_eq!(fetched.items[0].name, "Item 1");
+            assert_eq!(fetched.items[0].price, 15.50);
+
+            Ok(())
+        });
+    }
+
+    #[test]
+    pub fn test_get_receipts_by_day() {
+        let db = &mut TEST_POOL.clone().get().unwrap();
+        db.test_transaction(|db| -> Result<(), ()> {
+            let day = Local::now();
+            let test_day = DayForm {
+                date: day.date_naive(),
+                meal_id: None,
+                week: day.iso_week().week() as i32,
+                year: day.year(),
+            }
+            .upsert(db)
+            .unwrap();
+
+            let receipt1 = ReceiptForm {
+                store: String::from("Store 1"),
+                datetime: Local::now().naive_local(),
+            }
+            .insert(db)
+            .unwrap();
+
+            let receipt2 = ReceiptForm {
+                store: String::from("Store 2"),
+                datetime: Local::now().naive_local(),
+            }
+            .insert(db)
+            .unwrap();
+
+            // Link only receipt1 to the day
+            ReceiptDay {
+                day_id: test_day.id,
+                receipt_id: receipt1.id,
+            }
+            .upsert(db)
+            .unwrap();
+
+            let receipts = ReceiptWithItems::get_by_day(db, test_day.id)
+                .unwrap()
+                .unwrap();
+
+            assert_eq!(receipts.len(), 1);
+            assert_eq!(receipts[0].receipt.store, "Store 1");
+
+            // Test day with no receipts
+            let other_day = DayForm {
+                date: day.date_naive().succ_opt().unwrap(),
+                meal_id: None,
+                week: day.iso_week().week() as i32,
+                year: day.year(),
+            }
+            .upsert(db)
+            .unwrap();
+
+            let no_receipts = ReceiptWithItems::get_by_day(db, other_day.id).unwrap();
+            assert!(no_receipts.is_none());
+
+            Ok(())
+        });
+    }
+
+    #[test]
+    pub fn test_receipt_day_upsert() {
+        let db = &mut TEST_POOL.clone().get().unwrap();
+        db.test_transaction(|db| -> Result<(), ()> {
+            let day = Local::now();
+            let test_day = DayForm {
+                date: day.date_naive(),
+                meal_id: None,
+                week: day.iso_week().week() as i32,
+                year: day.year(),
+            }
+            .upsert(db)
+            .unwrap();
+
+            let receipt = ReceiptForm {
+                store: String::from("Test Store"),
+                datetime: Local::now().naive_local(),
+            }
+            .insert(db)
+            .unwrap();
+
+            let receipt_day = ReceiptDay {
+                day_id: test_day.id,
+                receipt_id: receipt.id,
+            };
+
+            // First upsert should create
+            let result = receipt_day.upsert(db);
+            assert!(result.is_ok());
+
+            // Second upsert will do_nothing on conflict, which returns NotFound
+            // This is expected behavior, just verify the relationship still exists
+            let _ = receipt_day.upsert(db);
+
+            let days = Day::get_by_receipt(db, receipt.id).unwrap().unwrap();
+            assert_eq!(days.len(), 1);
+            assert_eq!(days[0].id, test_day.id);
+
+            Ok(())
+        });
+    }
 }
