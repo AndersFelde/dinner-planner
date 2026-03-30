@@ -4,7 +4,6 @@ use crate::models::{day::DayForm, days_ingredients::IngredientWithBought};
 use crate::models::{days_ingredients::DayWithMealAndIngredients, receipt::ReceiptWithItems};
 use chrono::{Datelike, Local, NaiveDate, Weekday};
 use leptos::prelude::*;
-use leptos::logging::log;
 
 #[derive(serde::Deserialize, serde::Serialize, Clone, Debug, PartialEq)]
 pub struct Week {
@@ -14,10 +13,7 @@ pub struct Week {
 
 impl Week {
     pub fn new(week: u32, year: i32) -> Week {
-        Week {
-            week: week as u32,
-            year: year,
-        }
+        Week { week, year }
     }
     pub fn current() -> Week {
         let w = Local::now().date_naive().iso_week();
@@ -73,7 +69,7 @@ pub async fn days_for_week(week: Week) -> Result<[DayWithMealAndIngredients; 7],
     let db = &mut get_db()?;
     let days_query = days::table
         .filter(days::week.eq(week.week as i32))
-        .filter(days::year.eq(week.year as i32));
+        .filter(days::year.eq(week.year));
     let num_days: i64 = server_err!(
         days_query.count().get_result(db),
         "Could not get days for week {week:?}"
@@ -92,7 +88,7 @@ pub async fn days_for_week(week: Week) -> Result<[DayWithMealAndIngredients; 7],
             .is_none()
             {
                 let day_form = DayForm {
-                    date: date,
+                    date,
                     week: date.iso_week().week() as i32,
                     year: date.year(),
                     meal_id: None,
@@ -136,19 +132,18 @@ pub async fn days_for_week(week: Week) -> Result<[DayWithMealAndIngredients; 7],
             })
             .collect();
             days.push(DayWithMealAndIngredients {
-                day: day,
+                day,
                 meal: Some((meal, ingredients)),
                 receipts,
             });
         } else {
             days.push(DayWithMealAndIngredients {
-                day: day,
+                day,
                 meal: None,
                 receipts,
             })
         }
     }
-    Ok(days
-        .try_into()
-        .map_err(|_| ServerFnError::new("Expected 7 days in week"))?)
+    days.try_into()
+        .map_err(|_| ServerFnError::new("Expected 7 days in week"))
 }

@@ -25,7 +25,7 @@ pub fn UpdateMealForm(
     let on_submit = move |meal_form: MealForm, ingredient_forms: Vec<IngredientForm>| {
         add_meal_action.dispatch((
             Meal {
-                id: meal.read().meal.id.clone(),
+                id: meal.read().meal.id,
                 name: meal_form.name,
                 image: meal_form.image,
                 recipie_url: meal_form.recipie_url,

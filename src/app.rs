@@ -7,14 +7,16 @@ use leptos_router::{
     components::{Route, Router, Routes, ToHref},
     path,
 };
-
 use reactive_stores::Store;
+use std::collections::HashMap;
 
 #[derive(Clone, Debug, Default, Store)]
 pub struct GlobalState {
     extra_items_count: usize,
     week_ingredients_count: usize,
 }
+
+pub type IngredientUpdateMap = RwSignal<HashMap<(i32, i32), bool>>;
 
 #[derive(Clone)]
 pub enum RouteUrl {
@@ -88,6 +90,9 @@ pub fn App() -> impl IntoView {
     provide_meta_context();
     provide_context(Store::new(GlobalState::default()));
 
+    let ingredient_updates: IngredientUpdateMap = RwSignal::new(HashMap::new());
+    provide_context(ingredient_updates);
+
     view! {
         // injects a stylesheet into the document <head>
         // id=leptos means cargo-leptos will hot-reload this stylesheet
@@ -98,6 +103,7 @@ pub fn App() -> impl IntoView {
 
         // content for this welcome page
         <Notifications />
+        <WsListener />
         <Router>
             <main>
                 <Routes fallback=|| "Page not found.".into_view()>
@@ -111,4 +117,49 @@ pub fn App() -> impl IntoView {
             </main>
         </Router>
     }
+}
+
+/// Invisible component that holds a single WebSocket connection for the lifetime
+/// of the app session. Receives ingredient-update messages and writes them into
+/// the shared `IngredientUpdateMap` context so every `DayIngredient` component
+/// can react in real time.
+#[component]
+fn WsListener() -> impl IntoView {
+    // Derive the WebSocket URL from the current page's origin at runtime so the
+    // same binary works in dev (ws://localhost:3000) and prod (wss://yourdomain).
+    // The entire block is compiled out under SSR.
+    #[cfg(not(feature = "ssr"))]
+    {
+        use crate::ws::IngredientUpdate;
+        use codee::string::FromToStringCodec;
+        use leptos_use::{use_websocket, UseWebSocketReturn};
+
+        let ingredient_updates = expect_context::<IngredientUpdateMap>();
+
+        let ws_url = {
+            let location = web_sys::window().expect("no window").location();
+            let protocol = if location.protocol().unwrap_or_default() == "https:" {
+                "wss"
+            } else {
+                "ws"
+            };
+            let host = location.host().unwrap_or_default();
+            format!("{protocol}://{host}/ws")
+        };
+
+        let UseWebSocketReturn { message, .. } =
+            use_websocket::<String, String, FromToStringCodec>(&ws_url);
+
+        Effect::new(move |_| {
+            if let Some(msg) = message.get() {
+                if let Ok(update) = serde_json::from_str::<IngredientUpdate>(&msg) {
+                    ingredient_updates.update(|map| {
+                        map.insert((update.day_id, update.ingredient_id), update.bought);
+                    });
+                }
+            }
+        });
+    }
+
+    view! {}
 }

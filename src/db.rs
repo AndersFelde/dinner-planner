@@ -14,7 +14,7 @@ struct SqliteForeignKeyEnforcer;
 
 impl CustomizeConnection<SqliteConnection, R2D2Error> for SqliteForeignKeyEnforcer {
     fn on_acquire(&self, conn: &mut SqliteConnection) -> Result<(), R2D2Error> {
-        let result = (|| -> Result<(), _>{
+        let result = (|| -> Result<(), _> {
             // Enable strict foreign key checking
             conn.batch_execute("PRAGMA foreign_keys = ON;")?;
             // sleep if the database is busy, this corresponds to up to 2 seconds sleeping time.
@@ -28,8 +28,8 @@ impl CustomizeConnection<SqliteConnection, R2D2Error> for SqliteForeignKeyEnforc
             conn.batch_execute("PRAGMA wal_autocheckpoint = 1000;")?;
             // free some space by truncating possibly massive WAL files from the last run
             conn.batch_execute("PRAGMA wal_checkpoint(TRUNCATE);")
-        })();//
-        result.map_err(|e| R2D2Error::QueryError(e))
+        })(); //
+        result.map_err(R2D2Error::QueryError)
     }
 }
 
@@ -80,5 +80,4 @@ pub mod tests {
 
         Arc::new(pool)
     });
-
 }

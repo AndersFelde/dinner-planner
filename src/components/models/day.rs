@@ -192,7 +192,8 @@ pub fn Day(day: DayWithMealAndIngredients) -> impl IntoView {
                                     }
                                         .into_any()
                                 } else {
-                                    view! {}.into_any()
+                                    let _: () = view! {};
+                                    ().into_any()
                                 }}
                                 {if day.receipts.is_some() {
                                     view! {
@@ -220,7 +221,8 @@ pub fn Day(day: DayWithMealAndIngredients) -> impl IntoView {
                                     }
                                         .into_any()
                                 } else {
-                                    view! {}.into_any()
+                                    let _: () = view! {};
+                                    ().into_any()
                                 }}
                                 // Header
                                 <div class="p-4 border-b border-gray-200 dark:border-gray-700">

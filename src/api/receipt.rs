@@ -1,12 +1,10 @@
 use leptos::logging::error;
 use leptos::prelude::*;
 use leptos::server_fn::codec::{MultipartData, MultipartFormData};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::process::Command;
 
-use crate::models::receipt::{
-    ReceiptDay, ReceiptForm, ReceiptItem, ReceiptItemForm, ReceiptWithItems,
-};
+use crate::models::receipt::{ReceiptDay, ReceiptForm, ReceiptItemForm, ReceiptWithItems};
 
 #[cfg(feature = "ssr")]
 #[derive(Debug, Deserialize)]
@@ -17,8 +15,8 @@ struct ReceiptResult {
 }
 
 #[cfg(feature = "ssr")]
-fn ocr_image(image_path: &str, db: &mut super::ssr::DbConn) -> Result<Vec<Vec<String>>, String> {
-    use leptos::logging::{error, log};
+fn ocr_image(image_path: &str, _: &mut super::ssr::DbConn) -> Result<Vec<Vec<String>>, String> {
+    use leptos::logging::error;
     use serde_json;
 
     let output = match Command::new("uv")
@@ -68,7 +66,6 @@ pub async fn scan_receipt(
     ServerFnError,
 > {
     use crate::api::ssr::*;
-    use leptos::logging::log;
     use tempfile::Builder;
     use tokio::fs::File;
     use tokio::io::AsyncWriteExt;
@@ -78,20 +75,19 @@ pub async fn scan_receipt(
     // Safe to unwrap
     let mut data = data.into_inner().unwrap();
 
-    while let Ok(Some(mut field)) = data.next_field().await {
+    if let Ok(Some(mut field)) = data.next_field().await {
         let extension = match field.content_type().unwrap().essence_str() {
             "image/jpg" => "jpg",
             "image/png" => "png",
             "image/jpeg" => "jpeg",
             "image/bmp" => "bmp",
             "image/pdf" => "pdf",
-            t => return Err(ServerFnError::new(&format!("Unsupported file type {}", t))),
+            t => return Err(ServerFnError::new(format!("Unsupported file type {t}"))),
         };
         // log!("Got filetype {}", extension);
 
         // 1. Create a temporary file
         // NamedTempFile::new() creates it in the default temp dir
-        let final_path: String;
         let temp_file = Builder::new()
             .suffix(&format!(".{extension}"))
             .tempfile()
@@ -110,7 +106,7 @@ pub async fn scan_receipt(
         file.flush().await?;
 
         // Return the path so you can use it elsewhere
-        final_path = path.to_string_lossy().into_owned();
+        let final_path = path.to_string_lossy().into_owned();
 
         let lines = ocr_image(&final_path, db).map_err(ServerFnError::new)?;
 
@@ -145,7 +141,7 @@ pub async fn scan_receipt(
                     }
                     let name = words
                         .iter()
-                        .filter(|word| !(word.chars().last() == Some('%') && word.len() <= 3))
+                        .filter(|word| !(word.ends_with('%') && word.len() <= 3))
                         .cloned()
                         .collect::<Vec<_>>()
                         .join(" ");
@@ -208,7 +204,8 @@ pub async fn create_receipt_with_items(
             ReceiptDay {
                 day_id: day,
                 receipt_id: receipt.id
-            }.upsert(db),
+            }
+            .upsert(db),
             "Could not insert receipt day {day}"
         )?;
     }
@@ -227,15 +224,4 @@ pub async fn get_all_receipts_with_items() -> Result<Vec<ReceiptWithItems>, Serv
         ReceiptWithItems::get_all(db),
         "Could not get all receipts with items"
     )
-}
-
-#[cfg(feature = "ssr")]
-#[cfg(test)]
-mod test {
-    use super::ReceiptItem;
-    use crate::api::receipt::ocr_image;
-
-    #[test]
-    // TODO: create test
-    pub fn test_ocr() {}
 }

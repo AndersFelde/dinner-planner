@@ -79,16 +79,17 @@ pub fn ShoppingList() -> impl IntoView {
     Effect::watch(
         move || days.get(),
         move |days, _, _| {
-
-            let num_days = days.iter().filter(|day| {
-                if let Some((_, ingredients)) = day.meal.as_ref() {
-                    if ingredients.iter().any(|i| i.bought == false) {
-                        return true;
+            let num_days = days
+                .iter()
+                .filter(|day| {
+                    if let Some((_, ingredients)) = day.meal.as_ref() {
+                        if ingredients.iter().any(|i| !i.bought) {
+                            return true;
+                        }
                     }
-                }
-                false
-            })
-            .count();
+                    false
+                })
+                .count();
             week_ingredients_count.set(num_days)
         },
         false,
@@ -123,7 +124,7 @@ pub fn ShoppingList() -> impl IntoView {
             .iter()
             .filter(|day| {
                 if let Some((_, ingredients)) = day.meal.as_ref() {
-                    if ingredients.iter().any(|i| i.bought == false) {
+                    if ingredients.iter().any(|i| !i.bought) {
                         return true;
                     }
                 }

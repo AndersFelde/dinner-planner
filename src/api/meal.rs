@@ -2,7 +2,7 @@ use crate::models::ingredient::IngredientForm;
 use crate::models::meal::{Meal, MealForm, MealWithIngredients};
 use leptos::prelude::*;
 
-#[cfg(feature= "ssr")]
+#[cfg(feature = "ssr")]
 async fn get_image_url(image: String, name: String) -> Result<String, ServerFnError> {
     if !utils::is_valid_url(&image) {
         return utils::get_image_url(name).await;
@@ -57,7 +57,7 @@ pub async fn update_meal_with_ingredients(
     for mut ingredient_form in ingredient_forms {
         ingredient_form.meal_id = meal.id;
         let ingredient = insert_ingredient(db, ingredient_form)?;
-        let ingredient_id = ingredient.id.clone();
+        let ingredient_id = ingredient.id;
         ingredients.push(ingredient);
         for day in meal_days.iter() {
             insert_day_ingredient(DayIngredient {

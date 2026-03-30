@@ -1,6 +1,5 @@
 use crate::api::receipt::scan_receipt;
-use crate::components::models::receipt::Receipt;
-use crate::models::receipt::{ReceiptForm, ReceiptItemForm, ReceiptWithItems};
+use crate::models::receipt::{ReceiptForm, ReceiptItemForm};
 use leptos::prelude::*;
 use web_sys::wasm_bindgen::JsCast;
 use web_sys::{FormData, HtmlFormElement, SubmitEvent};
@@ -45,7 +44,8 @@ pub fn ReceiptUpload(
                     }
                 },
                 std::time::Duration::from_millis(interval_ms),
-            ).ok();
+            )
+            .ok();
 
             on_cleanup(move || {
                 if let Some(handle) = interval {
@@ -124,7 +124,8 @@ pub fn ReceiptUpload(
                                     {move || format!("{}%", progress.get() as u32)}
                                 </p>
                             </div>
-                        }.into_any()
+                        }
+                            .into_any()
                     } else if let Some(Ok(_)) = upload.read().as_ref() {
                         view! {
                             // <Receipt receipt_with_items=value/>

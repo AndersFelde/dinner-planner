@@ -21,11 +21,11 @@ pub fn Week() -> impl IntoView {
 
     let (week, set_week) = signal(Week::current());
     Effect::new(move || {
-        if let Some(query) = query.read().as_ref().ok() {
+        if let Ok(query) = query.read().as_ref() {
             set_week(Week::new(query.week, query.year));
         }
     });
-    let days_resource = Resource::new(move || week.get(), |week| days_for_week(week));
+    let days_resource = Resource::new(move || week.get(), days_for_week);
     let days_data = move || {
         days_resource.get().map(|val| {
             val.map(|days| {

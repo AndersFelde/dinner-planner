@@ -56,7 +56,7 @@ pub fn Notifications() -> impl IntoView {
                     days.iter()
                         .filter(|day| {
                             if let Some((_, ingredients)) = day.meal.as_ref() {
-                                if ingredients.iter().any(|i| i.bought == false) {
+                                if ingredients.iter().any(|i| !i.bought) {
                                     return true;
                                 }
                             }
@@ -68,9 +68,10 @@ pub fn Notifications() -> impl IntoView {
         },
         true,
     );
-    let on_perm_request = move |perm| match perm {
-        NotificationPermission::Granted => has_permissions.set(true),
-        _ => {}
+    let on_perm_request = move |perm| {
+        if perm == NotificationPermission::Granted {
+            has_permissions.set(true)
+        }
     };
     view! {
         <Show when=move || !has_permissions.get() fallback=|| view! {}>

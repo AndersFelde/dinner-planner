@@ -2,15 +2,26 @@ use crate::models::days_ingredients::DayIngredient;
 use leptos::prelude::*;
 
 #[server]
-pub async fn udpate_day_ingredient(
+pub async fn update_day_ingredient(
     day_ingredient: DayIngredient,
 ) -> Result<DayIngredient, ServerFnError> {
     use crate::api::ssr::*;
     let db = &mut get_db()?;
-    server_err!(
+    let result = server_err!(
         day_ingredient.update(db),
         "Could not update day_ingredient {day_ingredient:?}"
-    )
+    )?;
+
+    // Broadcast to all connected WebSocket clients; non-fatal if none are connected.
+    if let Some(tx) = use_context::<crate::ws::server::BroadcastTx>() {
+        let _ = tx.send(crate::ws::IngredientUpdate {
+            day_id: result.day_id,
+            ingredient_id: result.ingredient_id,
+            bought: result.bought,
+        });
+    }
+
+    Ok(result)
 }
 
 #[server]

@@ -1,0 +1,29 @@
+{
+  "disable_ai": false,
+  "lsp": {
+    "rust-analyzer": {
+      "initialization_options": {
+        "check": {
+          "command": "clippy",
+        },
+        // "procMacro": {
+        //   "ignored": {
+        //     "leptos_macro": [
+        //       // optional:
+        //       // "component",
+        //       // "server"
+        //     ],
+        //   },
+        // },
+        "cargo": { "features": "all", "allFeatures": true },
+        "rustfmt": {
+          "overrideCommand": [
+            "/home/kippster/.cargo/bin/leptosfmt",
+            "--stdin",
+            "--rustfmt",
+          ],
+        },
+      },
+    },
+  },
+}

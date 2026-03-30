@@ -9,7 +9,7 @@ pub fn ExtraItem(extra_item: ExtraItem) -> impl IntoView {
 
     let update_extra_item_action = Action::new(move |bought: &bool| {
         let mut extra_item = extra_item_clone.clone();
-        let bought = bought.clone();
+        let bought = *bought;
         async move {
             extra_item.bought = bought;
             update_extra_item(extra_item).await
@@ -37,7 +37,7 @@ pub fn ExtraItem(extra_item: ExtraItem) -> impl IntoView {
         >
             <span class="text-center">{extra_item.name.clone()}</span>
             <span class="text-sm font-normal text-gray-800 bg-gray-200 dark:bg-gray-700 dark:text-gray-100 px-3 py-1 rounded flex-shrink-0 flex items-center justify-center">
-                {extra_item.amount.clone()}
+                {extra_item.amount}
             </span>
         </span>
     }
