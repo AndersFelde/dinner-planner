@@ -68,7 +68,6 @@ pub async fn scan_receipt(
     ServerFnError,
 > {
     use crate::api::ssr::*;
-    use leptos::logging::log;
     use tempfile::Builder;
     use tokio::fs::File;
     use tokio::io::AsyncWriteExt;
@@ -78,20 +77,20 @@ pub async fn scan_receipt(
     // Safe to unwrap
     let mut data = data.into_inner().unwrap();
 
-    while let Ok(Some(mut field)) = data.next_field().await {
+    if let Ok(Some(mut field)) = data.next_field().await {
         let extension = match field.content_type().unwrap().essence_str() {
             "image/jpg" => "jpg",
             "image/png" => "png",
             "image/jpeg" => "jpeg",
             "image/bmp" => "bmp",
             "image/pdf" => "pdf",
-            t => return Err(ServerFnError::new(&format!("Unsupported file type {}", t))),
+            t => return Err(ServerFnError::new(format!("Unsupported file type {}", t))),
         };
         // log!("Got filetype {}", extension);
 
         // 1. Create a temporary file
         // NamedTempFile::new() creates it in the default temp dir
-        let final_path: String;
+
         let temp_file = Builder::new()
             .suffix(&format!(".{extension}"))
             .tempfile()
@@ -110,7 +109,7 @@ pub async fn scan_receipt(
         file.flush().await?;
 
         // Return the path so you can use it elsewhere
-        final_path = path.to_string_lossy().into_owned();
+        let final_path: String = path.to_string_lossy().into_owned();
 
         let lines = ocr_image(&final_path, db).map_err(ServerFnError::new)?;
 
@@ -208,7 +207,8 @@ pub async fn create_receipt_with_items(
             ReceiptDay {
                 day_id: day,
                 receipt_id: receipt.id
-            }.upsert(db),
+            }
+            .upsert(db),
             "Could not insert receipt day {day}"
         )?;
     }

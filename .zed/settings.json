@@ -1,0 +1,27 @@
+{
+    "lsp": {
+        "rust-analyzer": {
+            "initialization_options": {
+                "procMacro": {
+                    "ignored": {
+                        "leptos_macro": [
+                            // optional:
+                            // "component",
+                            // "server"
+                        ]
+                    }
+                },
+                "cargo": {
+                    "features": ["ssr", "hydrate"]
+                },
+                "rustfmt": {
+                    "overrideCommand": [
+                        "/home/kippster/.cargo/bin/leptosfmt",
+                        "--stdin",
+                        "--rustfmt"
+                    ]
+                }
+            }
+        }
+    }
+}

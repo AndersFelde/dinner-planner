@@ -8,19 +8,14 @@ pub fn Modal(show: Signal<bool>, children: ChildrenFn) -> impl IntoView {
     Effect::watch(
         move || show.get(),
         move |show, _, _| {
-                close.set(!*show);
+            close.set(!*show);
         },
         false,
     );
 
     let _ = on_click_outside(children_div, move |_| close.set(true));
     view! {
-        <Show
-            when=move || {
-                !close.get()
-            }
-            fallback=|| view! {}
-        >
+        <Show when=move || { !close.get() } fallback=|| view! {}>
 
             <div
                 tabindex="-1"
