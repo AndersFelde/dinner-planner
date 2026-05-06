@@ -11,7 +11,7 @@ use crate::{
 pub fn Meal(meal: MealWithIngredients) -> impl IntoView {
     let (deleted, set_deleted) = signal(false);
     let delete_meal_action = Action::new(|id: &i32| {
-        let id = id.clone();
+        let id = *id;
         async move { delete_meal(id).await }
     });
     let meal = RwSignal::new(meal);
@@ -52,7 +52,7 @@ pub fn Meal(meal: MealWithIngredients) -> impl IntoView {
                 // </A>
                 {move || {
                     let meal = &meal.read().meal;
-                    let meal_id = meal.id.clone();
+                    let meal_id = meal.id;
                     let meal_name = meal.name.clone();
                     view! {
                         <span

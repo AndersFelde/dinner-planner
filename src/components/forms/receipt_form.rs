@@ -1,15 +1,11 @@
 use crate::api::day::get_all_days_with_meals;
-use crate::api::receipt::{create_receipt_with_items, scan_receipt};
-use crate::components::forms::meal_form::CreateMealForm;
+use crate::api::receipt::create_receipt_with_items;
 use crate::components::modal::Modal;
-use crate::components::models::receipt::Receipt;
 use crate::models::day::Day;
 use crate::models::meal::Meal;
 use crate::models::receipt::{ReceiptForm, ReceiptItemForm, ReceiptWithItems};
-use chrono::{Datelike, Local};
+use chrono::Datelike;
 use leptos::prelude::*;
-use web_sys::wasm_bindgen::JsCast;
-use web_sys::{FormData, HtmlFormElement, SubmitEvent};
 
 #[component]
 fn DayPicker(matched_days: RwSignal<Vec<i32>>, open_modal: WriteSignal<bool>) -> impl IntoView {
@@ -48,7 +44,7 @@ fn DayPicker(matched_days: RwSignal<Vec<i32>>, open_modal: WriteSignal<bool>) ->
                                 day.date.month(),
                             );
                             let meal_name = meal.as_ref().map(|m| m.name.clone());
-                            let day_id = day.id.clone();
+                            let day_id = day.id;
                             view! {
                                 <div
                                     class=format!(
@@ -107,15 +103,16 @@ pub fn ReceiptForm(
     receipt_form: ReceiptForm,
     receipt_items_forms: Vec<ReceiptItemForm>,
 ) -> impl IntoView {
-    let add_receipt_action =
-        Action::new(|input: &(ReceiptForm, Vec<ReceiptItemForm>, Option<Vec<i32>>)| {
+    let add_receipt_action = Action::new(
+        |input: &(ReceiptForm, Vec<ReceiptItemForm>, Option<Vec<i32>>)| {
             let receipt_form = input.0.clone();
             let receipt_items_forms = input.1.clone();
             let matched_days = input.2.clone();
             async move {
                 create_receipt_with_items(receipt_form, receipt_items_forms, matched_days).await
             }
-        });
+        },
+    );
 
     Effect::new(move || {
         if let Some(Ok(new_receipt)) = add_receipt_action.value().get() {
@@ -238,9 +235,7 @@ pub fn ReceiptForm(
                 </div>
 
                 <div class="grid grid-cols-3 gap-2 mb-2">
-                    <div
-                        class="bg-blue-50 rounded-lg p-3 text-center border border-blue-200"
-                    >
+                    <div class="bg-blue-50 rounded-lg p-3 text-center border border-blue-200">
                         <div class="text-2xl font-bold text-blue-900">
                             {move || format!("{:.2}", anders_total.get()).replace(".", ",")}
                         </div>

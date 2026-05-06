@@ -1,12 +1,10 @@
 use leptos::logging::error;
 use leptos::prelude::*;
 use leptos::server_fn::codec::{MultipartData, MultipartFormData};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::process::Command;
 
-use crate::models::receipt::{
-    ReceiptDay, ReceiptForm, ReceiptItem, ReceiptItemForm, ReceiptWithItems,
-};
+use crate::models::receipt::{ReceiptDay, ReceiptForm, ReceiptItemForm, ReceiptWithItems};
 
 #[cfg(feature = "ssr")]
 #[derive(Debug, Deserialize)]
@@ -17,8 +15,8 @@ struct ReceiptResult {
 }
 
 #[cfg(feature = "ssr")]
-fn ocr_image(image_path: &str, db: &mut super::ssr::DbConn) -> Result<Vec<Vec<String>>, String> {
-    use leptos::logging::{error, log};
+fn ocr_image(image_path: &str, _: &mut super::ssr::DbConn) -> Result<Vec<Vec<String>>, String> {
+    use leptos::logging::error;
     use serde_json;
 
     let output = match Command::new("uv")
@@ -144,7 +142,7 @@ pub async fn scan_receipt(
                     }
                     let name = words
                         .iter()
-                        .filter(|word| !(word.chars().last() == Some('%') && word.len() <= 3))
+                        .filter(|word| !(word.ends_with('%') && word.len() <= 3))
                         .cloned()
                         .collect::<Vec<_>>()
                         .join(" ");

@@ -1,6 +1,7 @@
+use crate::app::IngredientUpdateMap;
 use crate::models::days_ingredients::DayIngredient;
 use crate::{
-    api::days_ingredients::udpate_day_ingredient, models::days_ingredients::IngredientWithBought,
+    api::days_ingredients::update_day_ingredient, models::days_ingredients::IngredientWithBought,
 };
 use leptos::prelude::*;
 
@@ -11,13 +12,22 @@ pub fn DayIngredient(day_ingredient: IngredientWithBought) -> impl IntoView {
 
     let day_id = day_ingredient.day_id;
     let ingredient_id = ingredient.id;
+
+    // Sync real-time updates from other clients delivered via WebSocket.
+    let ingredient_updates = expect_context::<IngredientUpdateMap>();
+    Effect::new(move |_| {
+        if let Some(val) = ingredient_updates.with(|m| m.get(&(day_id, ingredient_id)).copied()) {
+            set_bought.set(val);
+        }
+    });
+
     let update_ingredient_action = Action::new(move |bought: &bool| {
-        let bought = bought.clone();
+        let bought = *bought;
         async move {
-            udpate_day_ingredient(DayIngredient {
+            update_day_ingredient(DayIngredient {
                 day_id,
                 ingredient_id,
-                bought: bought,
+                bought,
             })
             .await
         }
@@ -39,13 +49,11 @@ pub fn DayIngredient(day_ingredient: IngredientWithBought) -> impl IntoView {
             on:click=on_click
         >
             {ingredient.name.clone()}
-                <Show
-                when= move || {ingredient.amount > 1}
-                fallback = || view!{}>
-                        <span class="ml-2 text-xs font-normal text-gray-800 bg-gray-200 dark:bg-gray-700 dark:text-gray-100 px-2 py-1 rounded">
-                            {ingredient.amount.clone()}
-                        </span>
-                </Show>
+            <Show when=move || { ingredient.amount > 1 } fallback=|| view! {}>
+                <span class="ml-2 text-xs font-normal text-gray-800 bg-gray-200 dark:bg-gray-700 dark:text-gray-100 px-2 py-1 rounded">
+                    {ingredient.amount}
+                </span>
+            </Show>
 
         </span>
     }

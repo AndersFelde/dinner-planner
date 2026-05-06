@@ -13,7 +13,7 @@ RUN npm install -g sass
 WORKDIR /work
 COPY . .
 
-ENV leptos_version=v0.2.43
+ENV leptos_version=v0.3.5
 
 RUN curl --proto '=https' --tlsv1.3 -LsSf https://github.com/leptos-rs/cargo-leptos/releases/download/${leptos_version}/cargo-leptos-installer.sh | sh
 

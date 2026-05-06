@@ -1,5 +1,8 @@
+#![allow(clippy::unused_unit)]
+
 pub mod models;
 pub mod utils;
+pub mod ws;
 
 #[cfg(feature = "ssr")]
 pub mod schema;
@@ -13,7 +16,8 @@ pub mod api;
 #[cfg(feature = "ssr")]
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
-    use axum::Router;
+    use crate::ws::server::{create_channel, ws_handler};
+    use axum::{routing::get, Extension, Router};
     use dinner_planner::app::*;
     use leptos::logging::{error, log};
     use leptos::prelude::*;
@@ -40,13 +44,20 @@ async fn main() {
         }
     }
 
+    let broadcast_tx = create_channel();
+
     let app = Router::new()
+        .route("/ws", get(ws_handler))
         .leptos_routes_with_context(
             &leptos_options,
             routes,
-            move || {
-                provide_context(pool.clone());
-                provide_context(0 as utils::NotificationCount)
+            {
+                let broadcast_tx = broadcast_tx.clone();
+                move || {
+                    provide_context(pool.clone());
+                    provide_context(0 as utils::NotificationCount);
+                    provide_context(broadcast_tx.clone());
+                }
             },
             {
                 let leptos_options = leptos_options.clone();
@@ -54,6 +65,7 @@ async fn main() {
             },
         )
         .fallback(leptos_axum::file_and_error_handler(shell))
+        .layer(Extension(broadcast_tx))
         .with_state(leptos_options);
 
     // run our app with hyper
