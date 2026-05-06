@@ -1,4 +1,5 @@
 use crate::components::notifications::Notifications;
+use crate::components::toasts::{ToastStore, ToastViewport};
 use crate::routes::receipt::{ReceiptCreateRoute, ReceiptListRoute};
 use crate::routes::{meal_list::MealList, shopping_list::ShoppingList, week::Week};
 use leptos::prelude::*;
@@ -89,6 +90,7 @@ pub fn App() -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
     provide_context(Store::new(GlobalState::default()));
+    provide_context(ToastStore::new());
 
     let ingredient_updates: IngredientUpdateMap = RwSignal::new(HashMap::new());
     provide_context(ingredient_updates);
@@ -103,6 +105,7 @@ pub fn App() -> impl IntoView {
 
         // content for this welcome page
         <Notifications />
+        <ToastViewport />
         <WsListener />
         <Router>
             <main>

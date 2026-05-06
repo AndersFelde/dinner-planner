@@ -2,6 +2,8 @@ use crate::api::extra_items::update_extra_item;
 use crate::models::extra_item::ExtraItem;
 use leptos::prelude::*;
 
+use crate::components::toasts::ToastStore;
+
 #[component]
 pub fn ExtraItem(extra_item: ExtraItem) -> impl IntoView {
     let (bought, set_bought) = signal(extra_item.bought);
@@ -13,6 +15,13 @@ pub fn ExtraItem(extra_item: ExtraItem) -> impl IntoView {
         async move {
             extra_item.bought = bought;
             update_extra_item(extra_item).await
+        }
+    });
+    let toast_store = expect_context::<ToastStore>();
+    let update_value = update_extra_item_action.clone();
+    Effect::new(move || {
+        if let Some(Err(err)) = update_value.value().get() {
+            toast_store.push_error(err.to_string());
         }
     });
     let on_click = move |_| {

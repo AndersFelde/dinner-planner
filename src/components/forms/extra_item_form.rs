@@ -3,6 +3,8 @@ use crate::models::extra_item::{ExtraItem, ExtraItemForm};
 use leptos::html::Input;
 use leptos::prelude::*;
 
+use crate::components::toasts::ToastStore;
+
 // #[component]
 // pub fn UpdateExtraItemForm() -> impl IntoView {
 //     let params = use_params_map();
@@ -89,10 +91,17 @@ pub fn CreateExtraItemForm(
         let extra_item_form = extra_item.clone();
         async move { insert_extra_item(extra_item_form).await }
     });
+    let toast_store = expect_context::<ToastStore>();
     Effect::new(move || {
-        if let Some(Ok(new_extra_item)) = add_extra_item_action.value().get() {
-            extra_item.set(Some(new_extra_item));
-            completed.set(true)
+        match add_extra_item_action.value().get() {
+            Some(Ok(new_extra_item)) => {
+                extra_item.set(Some(new_extra_item));
+                completed.set(true)
+            }
+            Some(Err(err)) => {
+                toast_store.push_error(err.to_string());
+            }
+            None => {}
         }
     });
 

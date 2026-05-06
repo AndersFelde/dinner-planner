@@ -14,6 +14,7 @@ use crate::app::GlobalState;
 use crate::components::modal::Modal;
 use crate::components::models::extra_item::ExtraItem;
 use crate::components::models::ingredient::DayIngredient;
+use crate::components::toasts::ToastStore;
 use crate::models::extra_item::ExtraItem;
 
 #[component]
@@ -43,11 +44,16 @@ pub fn ShoppingList() -> impl IntoView {
     let create_extra_item_completed = RwSignal::new(true);
     let show_create_extra_item = use_not(create_extra_item_completed);
     let new_extra_item: RwSignal<Option<ExtraItem>> = RwSignal::new(None);
+    let toast_store = expect_context::<ToastStore>();
+    let extra_items_toast = toast_store.clone();
+    let days_toast = toast_store.clone();
     Effect::watch(
         move || extra_items_resource.get(),
         move |r_extra_items, _, _| {
             if let Some(Ok(r_extra_items)) = r_extra_items {
                 extra_items.set(r_extra_items.clone());
+            } else if let Some(Err(err)) = r_extra_items {
+                extra_items_toast.push_error(err.to_string());
             }
         },
         true,
@@ -57,6 +63,8 @@ pub fn ShoppingList() -> impl IntoView {
         move |r_days, _, _| {
             if let Some(Ok(r_days)) = r_days {
                 days.set(r_days.into());
+            } else if let Some(Err(err)) = r_days {
+                days_toast.push_error(err.to_string());
             }
         },
         true,

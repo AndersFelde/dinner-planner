@@ -4,6 +4,8 @@ use leptos::prelude::*;
 use web_sys::wasm_bindgen::JsCast;
 use web_sys::{FormData, HtmlFormElement, SubmitEvent};
 
+use crate::components::toasts::ToastStore;
+
 #[component]
 pub fn ReceiptUpload(
     receipt_form: RwSignal<Option<ReceiptForm>>,
@@ -21,11 +23,19 @@ pub fn ReceiptUpload(
 
     let progress = RwSignal::new(0.0);
 
+    let toast_store = expect_context::<ToastStore>();
+    let upload_value = upload_action.clone();
     Effect::new(move || {
-        if let Some(Ok((new_receipt_form, new_items_forms))) = upload_action.value().get() {
-            receipt_form.set(Some(new_receipt_form));
-            receipt_items_forms.set(Some(new_items_forms));
-            receipt_editing.set(true);
+        match upload_value.value().get() {
+            Some(Ok((new_receipt_form, new_items_forms))) => {
+                receipt_form.set(Some(new_receipt_form));
+                receipt_items_forms.set(Some(new_items_forms));
+                receipt_editing.set(true);
+            }
+            Some(Err(err)) => {
+                toast_store.push_error(err.to_string());
+            }
+            None => {}
         }
     });
 
@@ -133,7 +143,7 @@ pub fn ReceiptUpload(
                         }
                             .into_any()
                     } else if let Some(Err(err)) = upload.read().as_ref() {
-                        view! { <p class="text-red-600">{format!("Error: {:?}", err)}</p> }
+                        view! { <p class="text-red-600">{format!("Error: {}", err)}</p> }
                             .into_any()
                     } else {
                         view! { <p class="text-gray-500">Something went wrong.</p> }.into_any()

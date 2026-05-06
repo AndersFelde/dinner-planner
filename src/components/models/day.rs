@@ -5,6 +5,7 @@ use crate::components::forms::meal_form::CreateMealForm;
 use crate::components::modal::Modal;
 use crate::components::models::ingredient::DayIngredient;
 use crate::components::models::receipt::Receipt;
+use crate::components::toasts::ToastStore;
 use crate::models::days_ingredients::DayWithMealAndIngredients;
 use crate::models::meal::{Meal, MealWithIngredients};
 use chrono::{Datelike, Local};
@@ -70,11 +71,14 @@ pub fn Day(day: DayWithMealAndIngredients) -> impl IntoView {
         false,
     );
 
+    let toast_store = expect_context::<ToastStore>();
     Effect::watch(
         move || meals_resource.get(),
         move |r_meals, _, _| {
             if let Some(Ok(r_meals)) = r_meals {
                 meals.set(r_meals.clone());
+            } else if let Some(Err(err)) = r_meals {
+                toast_store.push_error(err.to_string());
             }
         },
         true,

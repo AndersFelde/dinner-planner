@@ -2,6 +2,8 @@ use crate::api::day::update_attendance_for_day;
 use crate::models::day::Day;
 use leptos::prelude::*;
 
+use crate::components::toasts::ToastStore;
+
 #[component]
 pub fn Attendance<'a>(day: &'a Day) -> impl IntoView {
     let anders_attend = RwSignal::new(day.anders_attend);
@@ -16,6 +18,13 @@ pub fn Attendance<'a>(day: &'a Day) -> impl IntoView {
             ac_attend.get(),
             andreas_attend.get(),
         )
+    });
+    let toast_store = expect_context::<ToastStore>();
+    let update_attendance_value = update_attendance_action.clone();
+    Effect::new(move || {
+        if let Some(Err(err)) = update_attendance_value.value().get() {
+            toast_store.push_error(err.to_string());
+        }
     });
     let default_class =
         "inline-block px-1 py-1 rounded-full border shadow-sm text-sm font-sm min-w-[50px] text-center";

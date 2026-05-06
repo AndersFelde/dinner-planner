@@ -5,6 +5,8 @@ use crate::models::meal::{Meal, MealForm, MealWithIngredients};
 use leptos::html::Input;
 use leptos::prelude::*;
 
+use crate::components::toasts::ToastStore;
+
 #[component]
 pub fn UpdateMealForm(
     meal: RwSignal<MealWithIngredients>,
@@ -15,10 +17,18 @@ pub fn UpdateMealForm(
         let ingredients = input.1.clone();
         async move { update_meal_with_ingredients(meal, ingredients).await }
     });
+    let toast_store = expect_context::<ToastStore>();
+    let add_meal_value = add_meal_action.clone();
     Effect::new(move || {
-        if let Some(Ok(new_meal)) = add_meal_action.value().get() {
-            meal.set(new_meal);
-            completed.set(true)
+        match add_meal_value.value().get() {
+            Some(Ok(new_meal)) => {
+                meal.set(new_meal);
+                completed.set(true)
+            }
+            Some(Err(err)) => {
+                toast_store.push_error(err.to_string());
+            }
+            None => {}
         }
     });
     let on_cancel = move || completed.set(true);
@@ -60,10 +70,18 @@ pub fn CreateMealForm(
         async move { create_meal_with_ingredients(meal_form, ingredients).await }
     });
 
+    let toast_store = expect_context::<ToastStore>();
+    let add_meal_value = add_meal_action.clone();
     Effect::new(move || {
-        if let Some(Ok(new_meal)) = add_meal_action.value().get() {
-            meal.set(Some(new_meal));
-            completed.set(true)
+        match add_meal_value.value().get() {
+            Some(Ok(new_meal)) => {
+                meal.set(Some(new_meal));
+                completed.set(true)
+            }
+            Some(Err(err)) => {
+                toast_store.push_error(err.to_string());
+            }
+            None => {}
         }
     });
 

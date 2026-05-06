@@ -5,6 +5,8 @@ use crate::{
 };
 use leptos::prelude::*;
 
+use crate::components::toasts::ToastStore;
+
 #[component]
 pub fn DayIngredient(day_ingredient: IngredientWithBought) -> impl IntoView {
     let ingredient = day_ingredient.ingredient;
@@ -30,6 +32,13 @@ pub fn DayIngredient(day_ingredient: IngredientWithBought) -> impl IntoView {
                 bought,
             })
             .await
+        }
+    });
+    let toast_store = expect_context::<ToastStore>();
+    let update_value = update_ingredient_action.clone();
+    Effect::new(move || {
+        if let Some(Err(err)) = update_value.value().get() {
+            toast_store.push_error(err.to_string());
         }
     });
     let on_click = move |_| {

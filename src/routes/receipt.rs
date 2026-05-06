@@ -5,6 +5,7 @@ use crate::{
         error_list,
         forms::{receipt_form::ReceiptForm, receipt_upload_form::ReceiptUpload},
         models::receipt::Receipt,
+        toasts::ToastStore,
     },
     models::receipt::{ReceiptForm, ReceiptItemForm, ReceiptWithItems},
 };
@@ -116,11 +117,14 @@ pub fn ReceiptListRoute() -> impl IntoView {
     let receipt_resource = OnceResource::new(get_all_receipts_with_items());
     let receipts: RwSignal<Vec<ReceiptWithItems>> = RwSignal::new(Vec::new());
 
+    let toast_store = expect_context::<ToastStore>();
     Effect::watch(
         move || receipt_resource.get(),
         move |r_receipts, _, _| {
             if let Some(Ok(r_receipts)) = r_receipts {
                 receipts.set(r_receipts.clone());
+            } else if let Some(Err(err)) = r_receipts {
+                toast_store.push_error(err.to_string());
             }
         },
         true,

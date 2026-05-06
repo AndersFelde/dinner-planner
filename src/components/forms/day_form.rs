@@ -8,6 +8,8 @@ use leptos::html::{Div, Input};
 use leptos::prelude::*;
 use leptos_use::{on_click_outside_with_options, OnClickOutsideOptions};
 
+use crate::components::toasts::ToastStore;
+
 #[component]
 pub fn DayForm(
     day: RwSignal<DayWithMealAndIngredients>,
@@ -92,6 +94,7 @@ pub fn DayForm(
         let day_form = day_form.clone();
         async move { upsert_day(day_form).await }
     });
+    let toast_store = expect_context::<ToastStore>();
 
     let on_submit = move |ev: leptos::ev::SubmitEvent| {
         ev.prevent_default();
@@ -108,9 +111,15 @@ pub fn DayForm(
     };
 
     Effect::new(move || {
-        if let Some(Ok(new_day)) = add_day_action.value().get() {
-            day.set(new_day);
-            completed.set(true)
+        match add_day_action.value().get() {
+            Some(Ok(new_day)) => {
+                day.set(new_day);
+                completed.set(true)
+            }
+            Some(Err(err)) => {
+                toast_store.push_error(err.to_string());
+            }
+            None => {}
         }
     });
 

@@ -14,6 +14,7 @@ use crate::components::csr::js::check_notification_permission;
 use crate::components::csr::js::request_notification_permission;
 use crate::components::csr::js::set_badge;
 use crate::components::csr::NotificationStatus;
+use crate::components::toasts::ToastStore;
 
 #[component]
 pub fn Notifications() -> impl IntoView {
@@ -24,6 +25,9 @@ pub fn Notifications() -> impl IntoView {
         _ => has_permissions.set(false),
     });
     let state = expect_context::<Store<GlobalState>>();
+    let toast_store = expect_context::<ToastStore>();
+    let extra_items_toast = toast_store.clone();
+    let days_toast = toast_store.clone();
     let extra_items_count = state.extra_items_count();
     let week_ingredients_count = state.week_ingredients_count();
     let now = Local::now().date_naive().iso_week();
@@ -43,6 +47,8 @@ pub fn Notifications() -> impl IntoView {
         move |extra_items, _, _| {
             if let Some(Ok(extra_items)) = extra_items {
                 extra_items_count.set(extra_items.len())
+            } else if let Some(Err(err)) = extra_items {
+                extra_items_toast.push_error(err.to_string());
             }
         },
         true,
@@ -64,6 +70,8 @@ pub fn Notifications() -> impl IntoView {
                         })
                         .count(),
                 );
+            } else if let Some(Err(err)) = days {
+                days_toast.push_error(err.to_string());
             }
         },
         true,

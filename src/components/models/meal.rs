@@ -6,6 +6,7 @@ use crate::{
     components::{forms::meal_form::UpdateMealForm, modal::Modal},
     models::meal::MealWithIngredients,
 };
+use crate::components::toasts::ToastStore;
 
 #[component]
 pub fn Meal(meal: MealWithIngredients) -> impl IntoView {
@@ -13,6 +14,13 @@ pub fn Meal(meal: MealWithIngredients) -> impl IntoView {
     let delete_meal_action = Action::new(|id: &i32| {
         let id = *id;
         async move { delete_meal(id).await }
+    });
+    let toast_store = expect_context::<ToastStore>();
+    let delete_value = delete_meal_action.clone();
+    Effect::new(move || {
+        if let Some(Err(err)) = delete_value.value().get() {
+            toast_store.push_error(err.to_string());
+        }
     });
     let meal = RwSignal::new(meal);
     let update_completed = RwSignal::new(true);

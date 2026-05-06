@@ -4,6 +4,7 @@ use crate::components::error_list;
 use crate::components::forms::meal_form::CreateMealForm;
 use crate::components::modal::Modal;
 use crate::components::models::meal::Meal;
+use crate::components::toasts::ToastStore;
 use crate::models::meal::MealWithIngredients;
 use leptos::prelude::*;
 use leptos_router::components::A;
@@ -18,11 +19,15 @@ pub fn MealList() -> impl IntoView {
     let meals: RwSignal<Vec<MealWithIngredients>> = RwSignal::new(Vec::new());
     let search_input = RwSignal::new(String::new());
 
+    let toast_store = expect_context::<ToastStore>();
+    let meals_toast = toast_store.clone();
     Effect::watch(
         move || meals_resource.get(),
         move |r_meals, _, _| {
             if let Some(Ok(r_meals)) = r_meals {
                 meals.set(r_meals.clone());
+            } else if let Some(Err(err)) = r_meals {
+                meals_toast.push_error(err.to_string());
             }
         },
         true,

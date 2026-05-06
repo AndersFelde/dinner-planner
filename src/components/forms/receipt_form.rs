@@ -1,6 +1,7 @@
 use crate::api::day::get_all_days_with_meals;
 use crate::api::receipt::create_receipt_with_items;
 use crate::components::modal::Modal;
+use crate::components::toasts::ToastStore;
 use crate::models::day::Day;
 use crate::models::meal::Meal;
 use crate::models::receipt::{ReceiptForm, ReceiptItemForm, ReceiptWithItems};
@@ -11,12 +12,15 @@ use leptos::prelude::*;
 fn DayPicker(matched_days: RwSignal<Vec<i32>>, open_modal: WriteSignal<bool>) -> impl IntoView {
     let days_resource = OnceResource::new(get_all_days_with_meals());
     let days_with_meals: RwSignal<Vec<(Day, Option<Meal>)>> = RwSignal::new(Vec::new());
+    let toast_store = expect_context::<ToastStore>();
 
     Effect::watch(
         move || days_resource.get(),
         move |r_days, _, _| {
             if let Some(Ok(r_days)) = r_days {
                 days_with_meals.set(r_days.clone());
+            } else if let Some(Err(err)) = r_days {
+                toast_store.push_error(err.to_string());
             }
         },
         true,
@@ -114,10 +118,18 @@ pub fn ReceiptForm(
         },
     );
 
+    let toast_store = expect_context::<ToastStore>();
+    let add_receipt_value = add_receipt_action.clone();
     Effect::new(move || {
-        if let Some(Ok(new_receipt)) = add_receipt_action.value().get() {
-            receipt.set(Some(new_receipt));
-            receipt_editing.set(false)
+        match add_receipt_value.value().get() {
+            Some(Ok(new_receipt)) => {
+                receipt.set(Some(new_receipt));
+                receipt_editing.set(false)
+            }
+            Some(Err(err)) => {
+                toast_store.push_error(err.to_string());
+            }
+            None => {}
         }
     });
 
